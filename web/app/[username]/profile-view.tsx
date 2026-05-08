@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { PublicSignInLink } from "@/components/AuthBadge";
 import { CommandBar } from "@/components/CommandBar";
 import { EducationList } from "@/components/EducationList";
 import { ExperienceList } from "@/components/ExperienceList";
@@ -176,17 +177,10 @@ export function ProfileView({
               </h3>
               <p className="mt-1 text-xs text-neutral-400">
                 Sign in with GitHub to add your resume, connect Vercel, and let
-                the agents update your repos. Coming soon.
+                the agents update your repos.
               </p>
             </div>
-            <button
-              type="button"
-              disabled
-              className="cursor-not-allowed rounded-md border border-[var(--border)] bg-[var(--muted)] px-3 py-1.5 text-xs text-neutral-500"
-              title="GitHub sign-in is being wired up"
-            >
-              Sign in with GitHub →
-            </button>
+            <PublicSignInLink username={profile.username} />
           </div>
         </section>
       ) : null}
