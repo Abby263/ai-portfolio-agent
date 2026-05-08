@@ -25,8 +25,8 @@ const PIPELINE = [
     detail: "Upload PDF, DOCX, Markdown, or paste text for skills and roles.",
   },
   {
-    label: "Live links",
-    detail: "Use GitHub repo homepage links for deployed projects.",
+    label: "Live apps",
+    detail: "Use repo Website URLs for deployed projects.",
   },
   {
     label: "Portfolio",
@@ -79,7 +79,7 @@ export default function Home() {
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-neutral-300 md:text-lg">
                 This repo builds a public developer portfolio from GitHub,
-                resume uploads, and live links already stored on GitHub repos.
+                resume uploads, and deployed app URLs stored on GitHub repos.
                 The same profile also becomes a command center for README
                 drafts and guarded GitHub pull requests.
               </p>

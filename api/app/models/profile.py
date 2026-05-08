@@ -16,6 +16,7 @@ class Project(BaseModel):
     description: str | None = None
     repo_url: str | None = None
     homepage: str | None = None
+    pinned: bool = False
     language: str | None = None
     stars: int = 0
     topics: list[str] = []
@@ -49,6 +50,7 @@ class Resume(BaseModel):
     skills: list[str] = Field(default_factory=list)
     experiences: list[Experience] = Field(default_factory=list)
     education: list[Education] = Field(default_factory=list)
+    links: dict[str, str] = Field(default_factory=dict)
     raw_text: str
     sources: list[Source] = Field(default_factory=list)
 

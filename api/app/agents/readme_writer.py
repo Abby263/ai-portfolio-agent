@@ -42,7 +42,7 @@ def _llm_draft(repo: dict, current_readme: str | None) -> DraftReadme | None:
                         f"Description: {repo.get('description')}\n"
                         f"Language: {repo.get('language')}\n"
                         f"Topics: {repo.get('topics') or []}\n"
-                        f"Homepage: {repo.get('homepage') or ''}\n"
+                        f"Website: {repo.get('homepage') or ''}\n"
                         f"Stars: {repo.get('stargazers_count')}\n\n"
                         f"--- Current README ---\n{current_readme or '(none)'}\n--- end ---"
                     )
@@ -67,7 +67,7 @@ def _deterministic_draft(repo: dict, current_readme: str | None) -> DraftReadme:
     topics_line = (
         f"\n**Topics:** {', '.join(topics)}\n" if topics else ""
     )
-    homepage_line = f"\n**Homepage:** <{homepage}>\n" if homepage else ""
+    homepage_line = f"\n**Website:** <{homepage}>\n" if homepage else ""
 
     proposed = (
         f"# {name}\n\n"

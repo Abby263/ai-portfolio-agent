@@ -75,7 +75,7 @@ Set these on the **web** Vercel project:
 
 Do not put `OPENAI_API_KEY`, `GITHUB_TOKEN`, or KV tokens on the web project.
 No Vercel access token is required in the browser; live project URLs come from
-GitHub repo homepage links.
+the Website field on each GitHub repo.
 
 ### `ai-portfolio-agent-api` (`api/`)
 
@@ -93,8 +93,19 @@ Set these on the **API** Vercel project:
 | `CLERK_JWKS_URL` | Required for saved owner writes | Clerk JWKS URL used by the API to verify session JWTs from the web app. |
 
 Do not set `NEXT_PUBLIC_API_URL` on the API project. No Vercel token is needed
-for source connections; add each deployed URL as the GitHub repository homepage
-so the profile can pick it up from GitHub metadata.
+for source connections; add each deployed URL to the GitHub repository Website
+field so the profile can pick it up from GitHub metadata.
+
+### GitHub project metadata
+
+The portfolio prefers GitHub pinned repositories, then repositories with a
+deployed app URL. For the best portfolio page:
+
+1. Pin the repositories you want featured on your GitHub profile.
+2. Open each pinned repository's GitHub settings.
+3. Set the repository **Website** field to the deployed Vercel app URL.
+
+The UI labels these as deployed apps.
 
 ### Per-user UI inputs
 

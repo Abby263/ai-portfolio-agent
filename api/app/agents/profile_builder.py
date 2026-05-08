@@ -5,14 +5,19 @@ from ..models.profile import Profile, Project, Resume, Source
 
 
 def _project_from_repo(repo: dict, fetched_at: datetime) -> Project:
+    live_url = repo.get("homepage") or None
     return Project(
         name=repo["name"],
         description=repo.get("description"),
         repo_url=repo.get("html_url"),
-        homepage=(repo.get("homepage") or None),
+        homepage=live_url,
+        pinned=bool(repo.get("_pinned")),
         language=repo.get("language"),
         stars=repo.get("stargazers_count", 0),
         topics=repo.get("topics") or [],
+        deployment_url=live_url,
+        deployment_target="live app" if live_url else None,
+        deployment_count=1 if live_url else 0,
         sources=[
             Source(
                 connector="github",
@@ -54,7 +59,11 @@ def synthesize_profile(
 ) -> Profile:
     projects = sorted(
         [_project_from_repo(r, fetched_at) for r in repos if not r.get("fork")],
-        key=lambda p: p.stars,
+        key=lambda p: (
+            1 if p.pinned else 0,
+            1 if (p.deployment_url or p.homepage) else 0,
+            p.stars,
+        ),
         reverse=True,
     )
     links: dict[str, str] = {}
@@ -64,6 +73,12 @@ def synthesize_profile(
         links["blog"] = user["blog"]
     if user.get("twitter_username"):
         links["twitter"] = f"https://twitter.com/{user['twitter_username']}"
+    if resume:
+        for key, value in resume.links.items():
+            if key == "github":
+                links.setdefault(key, value)
+            else:
+                links[key] = value
 
     github_skills = _skills_from_repos(repos)
     skills = (

@@ -190,12 +190,12 @@ function SignedUserSourcesInner() {
         : "Loading public GitHub profile",
     },
     {
-      name: "Project live links",
+      name: "Deployed app links",
       connected: liveProjects > 0,
       detail:
         liveProjects > 0
-          ? `${liveProjects} projects expose live links from GitHub repo metadata`
-          : "Add homepage URLs to GitHub repos to show deployed project links.",
+          ? `${liveProjects} projects expose deployed app URLs`
+          : "Add demo URLs to GitHub repo Website fields.",
     },
     {
       name: "Resume",

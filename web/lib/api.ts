@@ -12,6 +12,7 @@ export type Project = {
   description: string | null;
   repo_url: string | null;
   homepage: string | null;
+  pinned: boolean;
   language: string | null;
   stars: number;
   topics: string[];
