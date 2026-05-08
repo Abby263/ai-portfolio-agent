@@ -15,7 +15,7 @@ export default function SourcesPage() {
           className="inline-flex items-center gap-2 text-xs text-neutral-500 transition hover:text-[var(--accent-soft)]"
         >
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
-          ai-portfolio-agent
+          AI Portfolio Agent
         </Link>
         <nav className="flex items-center gap-3 text-xs text-neutral-400">
           <PortfolioNavLink className="transition hover:text-neutral-100" />

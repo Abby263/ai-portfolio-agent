@@ -1,16 +1,7 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
 import { AuthBadge } from "@/components/AuthBadge";
-import { BuildButton } from "@/components/BuildButton";
 import { PortfolioNavLink } from "@/components/LandingUserPanels";
-
-async function goToProfile(formData: FormData) {
-  "use server";
-  const username = String(formData.get("username") ?? "").trim();
-  if (!username) return;
-  redirect(`/${encodeURIComponent(username)}`);
-}
 
 const PIPELINE = [
   {
@@ -27,15 +18,13 @@ const PIPELINE = [
   },
   {
     label: "Portfolio",
-    detail: "Render a public page at /github-username with provenance.",
+    detail: "Render a public page for the signed-in GitHub account.",
   },
   {
     label: "Actions",
     detail: "Draft READMEs and open PRs only after owner review.",
   },
 ];
-
-const DEMOS = ["torvalds", "gaearon", "tj", "sindresorhus"];
 
 export default function Home() {
   return (
@@ -44,7 +33,7 @@ export default function Home() {
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-4 px-6 py-4 sm:flex-row sm:items-center">
           <Link href="/" className="flex items-center gap-2 text-sm font-semibold">
             <span className="inline-block h-2 w-2 rounded-sm bg-[var(--accent-soft)]" />
-            ai-portfolio-agent
+            AI Portfolio Agent
           </Link>
           <nav className="flex flex-wrap items-center gap-3 text-xs text-neutral-400 sm:gap-4">
             <Link href="/sources" className="transition hover:text-neutral-100">
@@ -75,45 +64,27 @@ export default function Home() {
                 AI Portfolio Agent
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-neutral-300 md:text-lg">
-                This repo builds a public developer portfolio from GitHub,
-                resume uploads, and deployed app URLs stored on GitHub repos.
-                The same profile also becomes a command center for README
-                drafts and guarded GitHub pull requests.
+                Connect with GitHub, add your resume on the Sources page, and
+                generate a portfolio that presents your professional story,
+                pinned repositories, and deployed web apps in one place.
               </p>
 
-              <form
-                action={goToProfile}
-                className="mt-8 flex w-full max-w-xl flex-col gap-2 rounded-lg border border-[var(--border)] bg-[var(--muted)] p-2 shadow-xl shadow-black/20 sm:flex-row sm:items-center"
-              >
-                <label className="sr-only" htmlFor="username">
-                  GitHub username
-                </label>
-                <span className="hidden pl-2 text-sm text-neutral-500 sm:inline">
-                  github.com/
-                </span>
-                <input
-                  id="username"
-                  name="username"
-                  required
-                  autoFocus
-                  autoComplete="off"
-                  placeholder="github-username"
-                  className="min-w-0 flex-1 rounded-md bg-[var(--background)] px-3 py-2 text-sm outline-none placeholder:text-neutral-500 focus:ring-1 focus:ring-[var(--accent-soft)] sm:bg-transparent"
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <Link
+                  href="/sources"
+                  className="rounded-md bg-[var(--accent-soft)] px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-white"
+                >
+                  Connect sources
+                </Link>
+                <PortfolioNavLink
+                  label="Open my portfolio"
+                  className="rounded-md border border-[var(--border)] px-4 py-2 text-sm text-neutral-200 transition hover:border-[var(--accent-soft)] hover:text-[var(--accent-soft)]"
                 />
-                <BuildButton label="Build profile" />
-              </form>
-
-              <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
-                Demo profiles:
-                {DEMOS.map((u) => (
-                  <Link
-                    key={u}
-                    href={`/${u}`}
-                    className="rounded-md border border-[var(--border)] px-2 py-1 transition hover:border-[var(--accent-soft)] hover:text-[var(--accent-soft)]"
-                  >
-                    @{u}
-                  </Link>
-                ))}
+              </div>
+              <div className="mt-5 max-w-xl rounded-lg border border-[var(--border)] bg-[var(--muted)] p-4 text-sm leading-6 text-neutral-400">
+                GitHub identity comes from Clerk sign-in and the Sources page,
+                so portfolio ownership is tied to the connected account rather
+                than a typed username.
               </div>
             </div>
 
