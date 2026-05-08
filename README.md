@@ -17,7 +17,7 @@ The backend uses **LangGraph**-based AI agents to retrieve, reason, generate, an
 ## Features
 
 - **Profile from GitHub** — repos, languages, topics, stars merged into a structured profile.
-- **Resume parser** — paste plain-text or markdown; experience, education, and skills are extracted and merged with provenance.
+- **Resume parser** — upload PDF, DOCX, Markdown, or plain text; experience, education, and skills are extracted and merged with provenance.
 - **Storytelling agent** — generates a tagline, narrative, recurring themes, and per-project highlights from the merged profile.
 - **Conversational command bar** — "Ask my portfolio" UI plus a `POST /api/command` endpoint with structured suggested actions.
 - **README Update Agent** — drafts a structured README for any of your repos and opens a real pull request after explicit human review.
@@ -58,6 +58,12 @@ ai-portfolio-agent/
 ## Quickstart
 
 For local development and full deployment instructions — including how to obtain each secret — see **[SETUP.md](SETUP.md)**.
+
+This repo deploys as two Vercel projects. Put browser-facing variables on
+`ai-portfolio-agent` (`web/`) and API/server secrets on
+`ai-portfolio-agent-api` (`api/`). Clerk GitHub sign-in needs keys on both
+projects; adding Clerk only to the API project will not render the web sign-in
+button.
 
 ```bash
 # backend

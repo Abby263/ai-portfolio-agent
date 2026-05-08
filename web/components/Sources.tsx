@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 
 import { useAuth } from "@clerk/nextjs";
 
-import { buildProfile, type Profile } from "@/lib/api";
+import { buildProfile, type Profile, uploadResume } from "@/lib/api";
 
 const CLERK_ENABLED = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
@@ -51,6 +51,7 @@ function SourcesInner({
   getToken: GetToken;
 }) {
   const [resumeText, setResumeText] = useState("");
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [vercelToken, setVercelToken] = useState("");
   const [openRow, setOpenRow] = useState<Row>(null);
   const [error, setError] = useState<string | null>(null);
@@ -63,44 +64,65 @@ function SourcesInner({
   );
   const vercelConnected = deployedProjects.length > 0;
 
-  function rebuild() {
+  function applyResume() {
+    setError(null);
+    startTransition(async () => {
+      try {
+        const authToken = await getToken();
+        const next = resumeFile
+          ? await uploadResume(profile.username, { file: resumeFile, authToken })
+          : await buildProfile(profile.username, {
+              resumeText: resumeText.trim(),
+              authToken,
+            });
+        onUpdate(next);
+        setResumeFile(null);
+        setResumeText("");
+        setOpenRow(null);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to apply resume");
+      }
+    });
+  }
+
+  function connectVercel() {
     setError(null);
     startTransition(async () => {
       try {
         const authToken = await getToken();
         const next = await buildProfile(profile.username, {
-          resumeText: resumeText.trim() || null,
-          vercelToken: vercelToken.trim() || null,
+          vercelToken: vercelToken.trim(),
           authToken,
         });
         onUpdate(next);
+        setVercelToken("");
         setOpenRow(null);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to update profile");
+        setError(e instanceof Error ? e.message : "Failed to connect Vercel");
       }
     });
   }
 
   return (
-    <section className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-5">
-      <header className="mb-4 flex items-baseline justify-between">
+    <section className="rounded-lg border border-[var(--border)] bg-[var(--muted)] p-5">
+      <header className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
         <div>
           <h2 className="text-sm font-medium text-neutral-100">
             Build with your sources
           </h2>
           <p className="mt-1 text-xs text-neutral-500">
-            Connect more — the agents merge everything into one living profile.
+            Add owner-only sources and rebuild the public profile.
           </p>
         </div>
-        <span className="text-[10px] uppercase tracking-widest text-neutral-500">
+        <span className="text-[10px] uppercase text-neutral-500">
           Sources
         </span>
       </header>
 
-      <div className="divide-y divide-[var(--border)] rounded-xl border border-[var(--border)] bg-[var(--background)]">
+      <div className="divide-y divide-[var(--border)] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--background)]">
         <Row
           name="GitHub"
-          detail={`@${profile.username} · ${profile.projects.length} repos`}
+          detail={`@${profile.username} - ${profile.projects.length} repos`}
           connected
         />
 
@@ -108,8 +130,8 @@ function SourcesInner({
           name="Resume"
           detail={
             resumeConnected
-              ? `${profile.experiences.length} experiences · ${profile.education.length} education entries`
-              : "Paste a resume — extract experience, education, and skills."
+              ? `${profile.experiences.length} experiences - ${profile.education.length} education entries`
+              : "Upload PDF, DOCX, Markdown, or paste text."
           }
           connected={resumeConnected}
           open={openRow === "resume"}
@@ -121,8 +143,10 @@ function SourcesInner({
           <ResumeForm
             text={resumeText}
             setText={setResumeText}
+            file={resumeFile}
+            setFile={setResumeFile}
             pending={pending}
-            onSubmit={rebuild}
+            onSubmit={applyResume}
           />
         </Row>
 
@@ -144,7 +168,7 @@ function SourcesInner({
             token={vercelToken}
             setToken={setVercelToken}
             pending={pending}
-            onSubmit={rebuild}
+            onSubmit={connectVercel}
           />
         </Row>
       </div>
@@ -189,7 +213,7 @@ function Row({
             {open ? "Cancel" : actionLabel}
           </button>
         ) : (
-          <span className="text-[10px] uppercase tracking-widest text-emerald-400">
+          <span className="text-[10px] uppercase text-emerald-400">
             Connected
           </span>
         )}
@@ -216,36 +240,67 @@ function Dot({ connected }: { connected: boolean }) {
 function ResumeForm({
   text,
   setText,
+  file,
+  setFile,
   pending,
   onSubmit,
 }: {
   text: string;
   setText: (v: string) => void;
+  file: File | null;
+  setFile: (v: File | null) => void;
   pending: boolean;
   onSubmit: () => void;
 }) {
+  const canSubmit = Boolean(file) || text.trim().length >= 30;
+
   return (
     <>
       <p className="mb-2 text-xs text-neutral-500">
-        Plain text or markdown. Stays in this browser session — sent to the API
-        once and not stored.
+        Upload a resume file or paste text. Owner-authenticated updates can be
+        saved when Vercel KV is configured; otherwise they apply to this rebuild
+        only.
       </p>
+      <label className="block rounded-lg border border-dashed border-[var(--border)] bg-[var(--background)] p-3 transition hover:border-[var(--accent-soft)]">
+        <span className="block text-sm font-medium text-neutral-200">
+          Upload resume
+        </span>
+        <span className="mt-1 block text-xs text-neutral-500">
+          PDF, DOCX, Markdown, or plain text under 4 MB.
+        </span>
+        <input
+          type="file"
+          accept=".pdf,.docx,.txt,.md,.markdown,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          className="mt-3 block w-full text-xs text-neutral-400 file:mr-3 file:rounded-md file:border-0 file:bg-[var(--accent)] file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white hover:file:bg-[var(--accent-soft)]"
+        />
+        {file ? (
+          <span className="mt-2 block truncate font-mono text-xs text-[var(--accent-soft)]">
+            {file.name} - {(file.size / 1024).toFixed(1)} KB
+          </span>
+        ) : null}
+      </label>
+      <div className="my-3 flex items-center gap-3 text-[10px] uppercase text-neutral-600">
+        <span className="h-px flex-1 bg-[var(--border)]" />
+        Or paste text
+        <span className="h-px flex-1 bg-[var(--border)]" />
+      </div>
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={9}
         placeholder={
-          "Summary\nSenior software engineer …\n\nSkills\nPython, Go, React\n\nExperience\nStripe — Staff Engineer\n- Led …"
+          "Summary\nSenior software engineer ...\n\nSkills\nPython, Go, React\n\nExperience\nStripe - Staff Engineer\n- Led ..."
         }
         className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] p-3 font-mono text-xs text-neutral-200 outline-none placeholder:text-neutral-600 focus:border-[var(--accent-soft)]"
       />
       <div className="mt-2 flex justify-end">
         <button
           onClick={onSubmit}
-          disabled={pending || text.trim().length < 30}
+          disabled={pending || !canSubmit}
           className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {pending ? "Parsing…" : "Apply resume"}
+          {pending ? "Parsing..." : "Apply resume"}
         </button>
       </div>
     </>
@@ -277,20 +332,20 @@ function VercelForm({
         </a>
         . The token is sent to the API once and not persisted.
       </p>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <input
           type="password"
           value={token}
           onChange={(e) => setToken(e.target.value)}
           placeholder="vercel_xxxxxxxxxxxxxxxxxxxxxxxx"
-          className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 font-mono text-xs text-neutral-200 outline-none placeholder:text-neutral-600 focus:border-[var(--accent-soft)]"
+          className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 font-mono text-xs text-neutral-200 outline-none placeholder:text-neutral-600 focus:border-[var(--accent-soft)]"
         />
         <button
           onClick={onSubmit}
           disabled={pending || token.trim().length < 12}
           className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {pending ? "Connecting…" : "Connect"}
+          {pending ? "Connecting..." : "Connect"}
         </button>
       </div>
     </>

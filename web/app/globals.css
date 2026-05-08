@@ -1,12 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0f;
-  --foreground: #ededed;
-  --accent: #7c3aed;
-  --accent-soft: #a78bfa;
-  --muted: #1a1a24;
-  --border: #2a2a36;
+  --background: #0f1115;
+  --foreground: #f4f4f5;
+  --accent: #0f766e;
+  --accent-soft: #5eead4;
+  --accent-warm: #f59e0b;
+  --muted: #171a21;
+  --muted-strong: #20242d;
+  --border: #2f3541;
 }
 
 html,
@@ -23,6 +25,13 @@ body {
   --color-foreground: var(--foreground);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-warm: var(--accent-warm);
   --color-muted: var(--muted);
+  --color-muted-strong: var(--muted-strong);
   --color-border: var(--border);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--foreground);
 }

@@ -1,261 +1,272 @@
 # Setup
 
-End-to-end guide to running `ai-portfolio-agent` — locally and on Vercel. The project ships as a monorepo with two services:
+`ai-portfolio-agent` is a monorepo with two deployable Vercel projects. Most
+setup mistakes come from putting a variable on the wrong project.
 
-- `web/` — Next.js (App Router) frontend
-- `api/` — FastAPI + LangGraph backend
+| Vercel project | Root directory | Runtime | What belongs here |
+|---|---:|---|---|
+| `ai-portfolio-agent` | `web` | Next.js | Browser-facing config, API URL, Clerk web keys |
+| `ai-portfolio-agent-api` | `api` | FastAPI | OpenAI, GitHub write token, CORS, KV, Clerk API verification |
 
-You can run them locally with no API keys (every agent has a deterministic fallback), or deploy to Vercel with the keys below for the full experience.
-
----
-
-## Table of contents
-
-1. [Local development](#1-local-development)
-2. [Environment variables](#2-environment-variables)
-3. [How to get each secret](#3-how-to-get-each-secret)
-4. [Deploying to Vercel](#4-deploying-to-vercel)
-5. [Enabling write-side actions safely](#5-enabling-write-side-actions-safely)
-6. [Troubleshooting](#6-troubleshooting)
+If you added Clerk keys only to `ai-portfolio-agent-api`, the web UI cannot show
+the GitHub sign-in button. The `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` must be on
+the `ai-portfolio-agent` web project.
 
 ---
 
-## 1. Local development
+## 1. Local Development
 
 ### Prerequisites
 
 - Node.js 20+ and npm
 - Python 3.11+
-- A GitHub account (for the demo). No tokens required for read-only browsing.
+- A GitHub account
 
-### Backend
+The app runs without any secrets. Missing LLM/auth/storage features fall back to
+read-only or deterministic behavior.
+
+### API
 
 ```bash
 cd api
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 pip install -e .
-cp .env.example .env   # edit values you have
+cp .env.example .env
 uvicorn app.main:app --reload --port 8000
 ```
 
-The API runs at `http://localhost:8000`. Smoke test:
+Smoke test:
 
 ```bash
 curl http://localhost:8000/health
 curl http://localhost:8000/api/profile/torvalds
 ```
 
-### Frontend
+### Web
 
 ```bash
 cd web
 npm install
-cp .env.local.example .env.local   # default API URL points at localhost:8000
+cp .env.local.example .env.local
 npm run dev
 ```
 
-The app runs at `http://localhost:3000`. Try `http://localhost:3000/torvalds`.
+Open `http://localhost:3000`, or try `http://localhost:3000/torvalds`.
+
+When Clerk is not configured locally, you can open owner tools with
+`http://localhost:3000/<github-username>?edit=1`. This fallback is for local
+development and does not persist customizations unless the API is configured for
+owner-authenticated KV writes.
 
 ---
 
-## 2. Environment variables
+## 2. Environment Variables By Project
 
-### `api/` (FastAPI on Vercel Python)
+### `ai-portfolio-agent` (`web/`)
+
+Set these on the **web** Vercel project:
 
 | Variable | Required? | Purpose |
-|----------|-----------|---------|
-| `OPENAI_API_KEY` | Optional | Enables LLM-backed Storyteller, Resume Parser, Command Router, and README Writer. Each agent falls back to a deterministic implementation when this is unset. |
-| `GITHUB_TOKEN` | Required for write actions | Personal Access Token with `repo` scope. Used for higher GitHub rate limits on read endpoints **and** for opening pull requests via `/api/actions/create-pr`. |
-| `GITHUB_WRITE_OWNER` | Required when `GITHUB_TOKEN` is set | Locks PR creation to repos owned by this single GitHub user. Without it, the shared `GITHUB_TOKEN` could be abused via the public endpoint. **Do not skip this.** |
-| `CORS_ORIGINS` | Recommended | JSON list of allowed browser origins, e.g. `["http://localhost:3000","https://ai-portfolio-agent.vercel.app"]`. |
-| `KV_REST_API_URL` | Optional (auto-set by Vercel KV) | Upstash REST endpoint. Auto-populated when you enable Storage → KV on the api project. |
-| `KV_REST_API_TOKEN` | Optional (auto-set by Vercel KV) | Upstash REST auth token. Auto-populated alongside `KV_REST_API_URL`. |
-| `CLERK_SECRET_KEY` | Optional | Clerk backend key. Required to validate ownership on `POST /api/profile/{username}` so only the GitHub-matching owner can save customizations. |
-| `CLERK_JWKS_URL` | Optional | Clerk's JWKS endpoint, e.g. `https://YOUR-INSTANCE.clerk.accounts.dev/.well-known/jwks.json`. Find it on the Clerk dashboard under **API Keys → Show JWKS URL**. |
+|---|---:|---|
+| `NEXT_PUBLIC_API_URL` | Yes | Public URL of the API project, for example `https://ai-portfolio-agent-api.vercel.app`. This is bundled into the browser build. |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Required for sign-in | Clerk publishable key. This is what makes the GitHub sign-in button render in the web UI. |
+| `CLERK_SECRET_KEY` | Required for edit mode | Clerk server key used by Next.js server components to identify the signed-in GitHub user. |
 
-### `web/` (Next.js)
+Do not put `OPENAI_API_KEY`, `GITHUB_TOKEN`, KV tokens, or a Vercel access token
+on the web project.
+
+### `ai-portfolio-agent-api` (`api/`)
+
+Set these on the **API** Vercel project:
 
 | Variable | Required? | Purpose |
-|----------|-----------|---------|
-| `NEXT_PUBLIC_API_URL` | Yes | URL of the FastAPI backend, e.g. `https://ai-portfolio-agent-api.vercel.app`. Inlined at build time. |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Optional | Clerk publishable key. When set with `CLERK_SECRET_KEY`, sign-in becomes available; signed-in users whose GitHub login matches the URL username can edit that profile. Without these, the site stays public-read-only. |
-| `CLERK_SECRET_KEY` | Optional | Server-side Clerk secret. Pairs with the publishable key above. |
+|---|---:|---|
+| `OPENAI_API_KEY` | Optional | Enables LLM-backed Storyteller, Resume Parser, Command Router, and README Writer. Without it, deterministic fallbacks run. |
+| `GITHUB_TOKEN` | Required for PR creation | GitHub PAT used for higher rate limits and `/api/actions/create-pr`. |
+| `GITHUB_WRITE_OWNER` | Required when `GITHUB_TOKEN` is set | Safety guardrail. PR creation is restricted to repos owned by this GitHub username. |
+| `CORS_ORIGINS` | Recommended | JSON list of allowed web origins, for example `["http://localhost:3000","https://ai-portfolio-agent.vercel.app"]`. |
+| `KV_REST_API_URL` | Optional | Vercel KV / Upstash REST URL. Auto-created when KV is attached to the API project. |
+| `KV_REST_API_TOKEN` | Optional | Vercel KV / Upstash REST token. Auto-created with `KV_REST_API_URL`. |
+| `CLERK_SECRET_KEY` | Required for saved owner writes | Clerk server key used by the API to fetch the signed-in user's GitHub account. |
+| `CLERK_JWKS_URL` | Required for saved owner writes | Clerk JWKS URL used by the API to verify session JWTs from the web app. |
 
-### Per-user secrets (handed in via the UI)
+Do not set `NEXT_PUBLIC_API_URL` on the API project. Do not set a server-wide
+`VERCEL_TOKEN`; each owner enters their own Vercel access token in the profile
+UI.
 
-Some sources are too sensitive — or too account-specific — to live as a server-wide secret. The UI accepts these inline:
+### Per-user UI secrets
 
-| Source | Where the user enters it | What it unlocks |
-|--------|--------------------------|-----------------|
-| Vercel access token | "Connect Vercel" row on the profile page | The Vercel Agent fetches the user's deployments and matches them to repos so live URLs render on each project. The token is sent with one request and not persisted by the API. |
+| Secret | Where it is entered | What it unlocks |
+|---|---|---|
+| Resume file | Profile page -> Owner tools -> Resume | Upload PDF, DOCX, Markdown, or text. The parser extracts skills, experience, education, and summary. |
+| Vercel access token | Profile page -> Owner tools -> Vercel | Lists that user's deployments and matches live URLs to GitHub repos. |
 
----
+The API saves owner customizations only when all of these are true:
 
-## 3. How to get each secret
-
-### `OPENAI_API_KEY`
-
-1. Sign in at <https://platform.openai.com>.
-2. Navigate to **API keys** → **Create new secret key**.
-3. Give it a name like `ai-portfolio-agent` and copy the value (starts with `sk-…`). The key is shown only once.
-4. Pricing: agents in this repo use `gpt-4o-mini`. A typical full profile build costs cents. Set a usage limit under **Settings → Limits** to cap spend.
-
-The app works without this key; LLM features fall back to deterministic behavior.
-
-### `GITHUB_TOKEN`
-
-The token is needed for two things: lifting GitHub's rate limits on read calls (60/hour anonymous → 5,000/hour authenticated), and opening real PRs from the README Update Agent.
-
-**Recommended: Fine-grained PAT**
-
-1. Go to <https://github.com/settings/personal-access-tokens/new>.
-2. **Token name:** `ai-portfolio-agent`.
-3. **Expiration:** 90 days (rotate on schedule).
-4. **Resource owner:** your GitHub username.
-5. **Repository access:** *Only select repositories* → pick the repos you want the agent to be able to update.
-6. **Permissions → Repository permissions:**
-   - **Contents:** Read and write (needed to create branches/commits)
-   - **Pull requests:** Read and write
-   - **Metadata:** Read-only (auto-included)
-7. Click **Generate token** and copy the value (starts with `github_pat_…`).
-
-**Alternative: Classic PAT** (broader access; only use if fine-grained doesn't fit)
-
-1. Go to <https://github.com/settings/tokens/new>.
-2. Note: `ai-portfolio-agent`.
-3. Scopes: `repo` (full control of private and public repos).
-4. Generate, copy.
-
-### `GITHUB_WRITE_OWNER`
-
-This is just your GitHub username (e.g. `Abby263`). Set it as a string. It's the safety guardrail — the API server refuses PR creation against any other owner's repos, even if the token would technically allow it.
-
-### Clerk (auth)
-
-Clerk handles sign-in via GitHub OAuth and tells the server "this signed-in user is @abby263 on GitHub". The web app then unlocks the **Sources** card and write-side actions only on the matching `/abby263` profile.
-
-1. Sign up at <https://clerk.com> (free).
-2. Create a new application. Suggested name: `ai-portfolio-agent`.
-3. **Authentication → Social Connections → GitHub** → enable. Use Clerk's shared OAuth credentials for development; for production, click *Use custom credentials* and register your own GitHub OAuth app at <https://github.com/settings/developers> with the callback URL Clerk shows you.
-4. **API Keys** → copy:
-   - `Publishable key` → set as `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` on the **web** Vercel project (production scope).
-   - `Secret key` → set as `CLERK_SECRET_KEY` on the **web** Vercel project (production scope).
-5. **Domains** → add `https://ai-portfolio-agent.vercel.app` so Clerk allows callbacks there.
-6. Redeploy the web project. The "Sign in" button appears in the header; signing in with GitHub now unlocks edit mode on the matching profile URL.
-
-Without Clerk keys set, the site keeps working as a public read-only demo (the Sources card stays hidden for everyone).
-
-### Vercel KV (persistence)
-
-Owner customizations (resume text, Vercel token) persist across requests so the public portfolio stays enriched after the owner edits it.
-
-1. On the Vercel dashboard, open the **ai-portfolio-agent-api** project.
-2. **Storage → Create Database → KV** (the Upstash-backed one). Pick the region closest to your function deployments (`iad1` works for the default).
-3. Vercel auto-creates four env vars on the project: `KV_URL`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `KV_REST_API_READ_ONLY_TOKEN`. The API only needs `KV_REST_API_URL` and `KV_REST_API_TOKEN`.
-4. Redeploy. Customizations now save under `customizations:<github-username>` and are merged into the profile build for every visitor.
-
-The persistence layer no-ops cleanly when these env vars aren't set — POSTs still work session-only and GETs build from sources without saved overrides.
-
-### Vercel access token (per-user, UI-only)
-
-Used by the Vercel Agent to list the visiting user's deployments and match them to their GitHub repos. There is **no** server-side `VERCEL_TOKEN` env var — each user enters their own token in the **Connect Vercel** row on the profile page.
-
-1. Sign in at <https://vercel.com>.
-2. Go to **Account Settings → Tokens** (<https://vercel.com/account/tokens>).
-3. **Create Token** with the default *Full Account* scope and a short expiration (24h is enough for a one-time demo). If you trust the deployment long-term, choose 30 days and rotate.
-4. Copy the value (starts with `vercel_…`) and paste it into the Connect Vercel row on the profile page.
-
-The token is sent once with the build-profile request and is **not persisted** by the server.
+- Vercel KV is configured on `ai-portfolio-agent-api`.
+- Clerk is configured on both projects.
+- The signed-in Clerk user has a GitHub account matching the profile URL.
 
 ---
 
-## 4. Deploying to Vercel
+## 3. Get The Secrets
 
-The repo deploys as **two Vercel projects**, both pointing at the same GitHub repo.
+### OpenAI
 
-### One-time setup
+1. Open <https://platform.openai.com>.
+2. Create an API key.
+3. Set `OPENAI_API_KEY` on `ai-portfolio-agent-api`.
 
-You can do everything from the Vercel dashboard, or use the CLI:
+This is optional. The app still works without it.
 
-```bash
-npm i -g vercel
-vercel login
+### GitHub PAT
+
+Use a fine-grained token when possible:
+
+1. Open <https://github.com/settings/personal-access-tokens/new>.
+2. Select only the repos the agent may update.
+3. Grant repository permissions:
+   - Contents: read and write
+   - Pull requests: read and write
+   - Metadata: read-only
+4. Set `GITHUB_TOKEN` on `ai-portfolio-agent-api`.
+5. Set `GITHUB_WRITE_OWNER` to your GitHub username.
+
+The write owner guard is not optional when a shared server token exists.
+
+### Clerk Auth
+
+Clerk is what makes owner mode safe. It signs the user in with GitHub, then the
+app checks that the Clerk GitHub username matches `/github-username`.
+
+1. Create a Clerk application at <https://clerk.com>.
+2. In Clerk, enable **Authentication -> Social Connections -> GitHub**.
+3. For production, add your deployed web domain in Clerk Domains / allowed URLs.
+4. Copy the publishable key and secret key.
+5. On `ai-portfolio-agent` (`web/`), set:
+   - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+   - `CLERK_SECRET_KEY`
+6. On `ai-portfolio-agent-api` (`api/`), set:
+   - `CLERK_SECRET_KEY`
+   - `CLERK_JWKS_URL`
+
+`CLERK_JWKS_URL` is visible in the Clerk dashboard under API keys / JWKS. It
+looks like:
+
+```text
+https://<your-clerk-host>/.well-known/jwks.json
 ```
 
-### Project 1 — `ai-portfolio-agent-api`
+After changing Clerk variables, redeploy both Vercel projects.
 
-1. **Import** the GitHub repo at <https://vercel.com/new>.
-2. **Framework preset:** *Other* (the project is configured via `api/vercel.json`).
-3. **Root Directory:** **`api`** &nbsp;← critical. Without this, paths in `api/vercel.json` won't resolve and every route will 404.
-4. **Project Name:** `ai-portfolio-agent-api`.
-5. **Environment Variables** (production scope):
-   - `OPENAI_API_KEY` — optional
-   - `GITHUB_TOKEN` — required for write actions
-   - `GITHUB_WRITE_OWNER` — required when `GITHUB_TOKEN` is set
-   - `CORS_ORIGINS` — `["http://localhost:3000","https://ai-portfolio-agent.vercel.app"]`
-6. **Deployment Protection:** disabled (Settings → Deployment Protection → off, or set `ssoProtection: null` on the project). Otherwise public requests get a 401.
-7. **Deploy.** The production URL will be `https://ai-portfolio-agent-api.vercel.app`.
+### Vercel KV
 
-Smoke test:
+KV persists resume text and per-user Vercel tokens after the owner saves them.
+
+1. Open the `ai-portfolio-agent-api` project in Vercel.
+2. Create or attach a Vercel KV database.
+3. Confirm Vercel added `KV_REST_API_URL` and `KV_REST_API_TOKEN` to the API
+   project.
+4. Redeploy `ai-portfolio-agent-api`.
+
+The app still works without KV, but owner source updates apply only to the
+current rebuild response.
+
+### Vercel Access Token
+
+This is not a Vercel project environment variable.
+
+Each profile owner creates their own token at <https://vercel.com/account/tokens>
+and enters it in the profile page's Vercel source row. The token is sent to the
+API for that request and is saved only when owner auth plus KV are configured.
+
+---
+
+## 4. Deploy To Vercel
+
+Import the same GitHub repo twice.
+
+### Project 1: `ai-portfolio-agent-api`
+
+1. Import the GitHub repo in Vercel.
+2. Set **Root Directory** to `api`.
+3. Use framework preset **Other**.
+4. Add API environment variables from section 2.
+5. Disable Deployment Protection if the public web app should call the API.
+6. Deploy.
+
+Expected health check:
 
 ```bash
 curl https://ai-portfolio-agent-api.vercel.app/health
-# → {"status":"ok"}
 ```
 
-### Project 2 — `ai-portfolio-agent`
+### Project 2: `ai-portfolio-agent`
 
-1. **Import** the same GitHub repo.
-2. **Framework preset:** *Next.js* (auto-detected).
-3. **Root Directory:** **`web`** &nbsp;← critical.
-4. **Project Name:** `ai-portfolio-agent`.
-5. **Environment Variables** (production scope):
-   - `NEXT_PUBLIC_API_URL` = `https://ai-portfolio-agent-api.vercel.app`
-6. **Deployment Protection:** disabled.
-7. **Deploy.** The production URL will be `https://ai-portfolio-agent.vercel.app`.
+1. Import the same GitHub repo again.
+2. Set **Root Directory** to `web`.
+3. Use framework preset **Next.js**.
+4. Add web environment variables from section 2.
+5. Disable Deployment Protection if the public site should be viewable.
+6. Deploy.
 
-### Auto-deploy on push
+Expected smoke test:
 
-Both projects are connected to the GitHub repo, so:
-
-- Push to `main` → production deploy on both projects.
-- Open a PR → preview deploys with branch-named URLs (great for testing slices before merge).
+```text
+https://ai-portfolio-agent.vercel.app/torvalds
+```
 
 ---
 
-## 5. Enabling write-side actions safely
+## 5. Resume Upload
 
-`POST /api/actions/create-pr` is the only endpoint that mutates state outside this stack. It uses the server's `GITHUB_TOKEN` to branch + commit + open PRs. That means the token's scope is shared across every caller of the public API — so:
+The owner source panel supports:
 
-- **Always set `GITHUB_WRITE_OWNER`.** The endpoint returns 403 for any other owner.
-- **Use a fine-grained PAT scoped to the specific repos** the agent should touch.
-- **Set a short expiration** on the token (90 days) and rotate on schedule.
-- **Monitor the token's audit log** under <https://github.com/settings/security-log>.
+- `.pdf`
+- `.docx`
+- `.md` / `.markdown`
+- `.txt`
 
-If you don't set `GITHUB_TOKEN`, every other feature still works; only the "Open PR" button in the README Update flow returns a clear 400 with the missing-token message.
+PDF extraction uses the `pypdf` dependency in the API. Scanned image-only PDFs
+will not produce useful text. For those, upload a text-based PDF, DOCX, or paste
+plain text.
 
 ---
 
 ## 6. Troubleshooting
 
-### Every API route returns 404
+### I added Clerk to `ai-portfolio-agent-api`, but sign-in is missing
 
-The `api` Vercel project is missing **Root Directory = `api`**. Without it, the relative paths in `api/vercel.json` resolve at the repo root and Vercel's router can't find the function. Fix it under Settings → General → Root Directory.
+Add `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` to the
+`ai-portfolio-agent` web project, then redeploy the web project. The API project
+cannot render the browser sign-in button.
 
-### `/torvalds` returns 404 in production
+### Sign-in appears, but owner tools do not unlock
 
-The web app's server-side fetch couldn't reach the API:
-- Check `NEXT_PUBLIC_API_URL` on the `web` project points at the live API URL (not `localhost:8000`).
-- Confirm the API project has Deployment Protection **off**, otherwise the `web` build sees 401s.
+Check that:
 
-### Resume parsing returns no skills
+- `CLERK_SECRET_KEY` exists on the `ai-portfolio-agent` web project.
+- GitHub social login is enabled in Clerk.
+- The signed-in Clerk user's GitHub username matches the URL username exactly,
+  case-insensitive.
 
-The deterministic parser splits on common section headers (Summary / Skills / Experience / Education). If your resume uses other headers, paste a version that does, or set `OPENAI_API_KEY` to fall back to the LLM parser.
+### Resume or Vercel updates do not persist
 
-### "Server has no GITHUB_TOKEN configured" on Open PR
+Check that `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `CLERK_SECRET_KEY`, and
+`CLERK_JWKS_URL` exist on `ai-portfolio-agent-api`, then redeploy the API.
 
-Set `GITHUB_TOKEN` (and `GITHUB_WRITE_OWNER`) on the `api` Vercel project, then redeploy. See section 5.
+### API routes return 404 on Vercel
 
-### Cold starts feel slow on the first request
+The API project root directory is wrong. Set `ai-portfolio-agent-api` root
+directory to `api`.
 
-`@vercel/python` cold starts are 1–3 seconds for this dep set. Subsequent requests in the same warm container are fast. For consistently low latency, host the API on a long-running runtime (Render / Fly / Railway) instead.
+### `/torvalds` fails in production
+
+Check that `NEXT_PUBLIC_API_URL` on the `ai-portfolio-agent` web project points
+to the live API URL and that Deployment Protection is disabled on the API.
+
+### Opening a PR fails with missing token
+
+Set `GITHUB_TOKEN` and `GITHUB_WRITE_OWNER` on `ai-portfolio-agent-api`, then
+redeploy the API.

@@ -12,13 +12,13 @@ export function EducationList({ items }: { items: Education[] }) {
           <div className="font-medium text-neutral-100">{e.institution}</div>
           {e.degree || e.field ? (
             <div className="text-sm text-neutral-400">
-              {[e.degree, e.field].filter(Boolean).join(" · ")}
+              {[e.degree, e.field].filter(Boolean).join(" - ")}
             </div>
           ) : null}
           {e.start || e.end ? (
             <div className="mt-1 text-xs text-neutral-500">
               {e.start ?? ""}
-              {e.start || e.end ? " — " : ""}
+              {e.start || e.end ? " - " : ""}
               {e.end ?? ""}
             </div>
           ) : null}

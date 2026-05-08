@@ -86,7 +86,7 @@ export function ReadmeWriter({
   }
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--muted)] p-4">
+    <div className="rounded-lg border border-[var(--border)] bg-[var(--muted)] p-4">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-medium text-neutral-200">
           README Update Agent
@@ -138,14 +138,14 @@ export function ReadmeWriter({
       ) : null}
 
       {phase === "drafting" ? (
-        <p className="text-sm text-neutral-400">Drafting README…</p>
+        <p className="text-sm text-neutral-400">Drafting README...</p>
       ) : null}
 
       {phase === "review" && draft ? (
         <>
           <p className="text-xs text-neutral-500">{draft.summary}</p>
           <p className="mt-2 text-xs text-neutral-500">
-            Editable — review before opening a PR against{" "}
+            Editable - review before opening a PR against{" "}
             <span className="text-neutral-300">
               {draft.owner}/{draft.repo}@{draft.default_branch}
             </span>
@@ -176,7 +176,7 @@ export function ReadmeWriter({
       ) : null}
 
       {phase === "creating" ? (
-        <p className="text-sm text-neutral-400">Branching, committing, opening PR…</p>
+        <p className="text-sm text-neutral-400">Branching, committing, opening PR...</p>
       ) : null}
 
       {phase === "done" && prUrl ? (

@@ -17,7 +17,7 @@ export default function Loading() {
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--accent)] opacity-75" />
           <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--accent-soft)]" />
         </span>
-        Agents are building this profile…
+        Agents are building this profile...
       </div>
 
       <div className="mt-12 space-y-3">
@@ -30,7 +30,7 @@ export default function Loading() {
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className="h-36 animate-pulse rounded-xl border border-[var(--border)] bg-[var(--muted)]"
+            className="h-36 animate-pulse rounded-lg border border-[var(--border)] bg-[var(--muted)]"
           />
         ))}
       </div>
