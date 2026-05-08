@@ -11,71 +11,28 @@ async function goToProfile(formData: FormData) {
 const HOW_IT_WORKS = [
   {
     step: "01",
-    title: "Connect your sources",
-    body: "GitHub today; Vercel, LinkedIn, Instagram, your resume, and project docs as they ship. Every fact carries provenance back to the source it came from.",
+    title: "Drop in your GitHub username",
+    body: "We pull repos, languages, topics and stars from the public GitHub API and build a structured profile in seconds.",
   },
   {
     step: "02",
-    title: "Agents do the work",
-    body: "A LangGraph orchestrator fans out to per-domain agents — fetcher, parser, storyteller — that retrieve, reason, and merge into a single living profile.",
+    title: "Plug in resume + Vercel",
+    body: "Paste your resume to merge experience and education. Connect a Vercel token to surface live demo URLs on each project.",
   },
   {
     step: "03",
-    title: "A portfolio that acts",
-    body: "Beyond showcasing your work, ask the agent to update READMEs, generate case studies, or open PRs across your repos. Every write goes through human review.",
-  },
-];
-
-const AGENTS = [
-  {
-    name: "Profile Builder",
-    role: "Synthesizes the developer profile from indexed sources.",
-    state: "Live",
-  },
-  {
-    name: "GitHub Agent",
-    role: "Reads repos, READMEs, languages, topics; later writes branches & PRs.",
-    state: "Live (read), Live (write)",
-  },
-  {
-    name: "Resume Parser",
-    role: "Extracts skills, experience, and education from pasted text.",
-    state: "Live",
-  },
-  {
-    name: "Storytelling Agent",
-    role: "Generates the tagline, narrative, themes, and per-project highlights.",
-    state: "Live",
-  },
-  {
-    name: "Command Router",
-    role: "Conversational interface for asking and instructing the portfolio.",
-    state: "Live",
-  },
-  {
-    name: "README Update Agent",
-    role: "Drafts a structured README, opens a PR after explicit human review.",
-    state: "Live",
-  },
-  {
-    name: "Vercel Agent",
-    role: "Lists deployments and matches them to repos.",
-    state: "Planned",
-  },
-  {
-    name: "LinkedIn / Instagram",
-    role: "Pulls professional and creative posts to enrich the profile.",
-    state: "Planned",
+    title: "A portfolio that can act",
+    body: "Ask the command bar to update READMEs, draft case studies, or open PRs across your repos. Every write goes through human review.",
   },
 ];
 
 const SOURCES = [
-  { name: "GitHub", state: "Live" },
-  { name: "Resume", state: "Live" },
-  { name: "Vercel", state: "Planned" },
-  { name: "LinkedIn", state: "Planned" },
-  { name: "Instagram", state: "Planned" },
-  { name: "Blogs / Docs", state: "Planned" },
+  { name: "GitHub", state: "Live", detail: "Repos, languages, stars, topics" },
+  { name: "Resume", state: "Live", detail: "Skills, experience, education from pasted text" },
+  { name: "Vercel", state: "Live", detail: "Match deployments to repos, surface live URLs" },
+  { name: "LinkedIn", state: "Planned", detail: "Professional history, certifications" },
+  { name: "Instagram", state: "Planned", detail: "Build-in-public posts, demos" },
+  { name: "Blogs / Docs", state: "Planned", detail: "Long-form writing and project docs" },
 ];
 
 const DEMOS = ["torvalds", "gaearon", "tj", "sindresorhus"];
@@ -96,8 +53,8 @@ export default function Home() {
             <a href="#how" className="transition hover:text-neutral-100">
               How it works
             </a>
-            <a href="#agents" className="transition hover:text-neutral-100">
-              Agents
+            <a href="#sources" className="transition hover:text-neutral-100">
+              Sources
             </a>
             <a href="#try" className="transition hover:text-neutral-100">
               Try it
@@ -121,16 +78,17 @@ export default function Home() {
           <div className="mx-auto flex max-w-3xl flex-col items-center px-6 py-24 md:py-32">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--muted)] px-3 py-1 text-xs text-[var(--accent-soft)]">
               <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
-              AI-powered developer portfolio
+              AI agents · LangGraph · Always live
             </div>
             <h1 className="text-balance text-center text-5xl font-semibold tracking-tight md:text-7xl">
-              A living portfolio that{" "}
-              <span className="text-[var(--accent-soft)]">tells your story</span>
+              Your dev portfolio,{" "}
+              <span className="text-[var(--accent-soft)]">on autopilot</span>
             </h1>
-            <p className="mt-6 max-w-xl text-balance text-center text-base text-neutral-400 md:text-lg">
-              Connect GitHub, Vercel, your resume and more. Let agents assemble
-              the portfolio, narrate your journey, and act on your repos when
-              you ask.
+            <p className="mt-6 max-w-2xl text-balance text-center text-base text-neutral-400 md:text-lg">
+              Drop in your GitHub username. Agents pull your repos, parse your
+              resume, match your Vercel deployments, and write the story. Then
+              ask them to update READMEs or open PRs — without leaving the
+              page.
             </p>
 
             <form
@@ -149,7 +107,7 @@ export default function Home() {
                 type="submit"
                 className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-soft)]"
               >
-                Build portfolio
+                Build
               </button>
             </form>
 
@@ -176,7 +134,7 @@ export default function Home() {
                 How it works
               </h2>
               <p className="mt-2 max-w-2xl text-balance text-2xl font-medium tracking-tight md:text-3xl">
-                Three steps from sources to a portfolio that can act.
+                From a username to a portfolio that can act — in three steps.
               </p>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
@@ -185,7 +143,7 @@ export default function Home() {
                   key={s.step}
                   className="rounded-xl border border-[var(--border)] bg-[var(--muted)] p-6"
                 >
-                  <div className="text-xs font-mono text-[var(--accent-soft)]">
+                  <div className="font-mono text-xs text-[var(--accent-soft)]">
                     {s.step}
                   </div>
                   <h3 className="mt-3 text-lg font-medium text-neutral-100">
@@ -200,16 +158,16 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Agents */}
-        <section id="agents" className="border-t border-[var(--border)]/60">
+        {/* Sources */}
+        <section id="sources" className="border-t border-[var(--border)]/60">
           <div className="mx-auto max-w-6xl px-6 py-20">
             <div className="mb-10 flex flex-wrap items-baseline justify-between gap-4">
               <div>
                 <h2 className="text-xs uppercase tracking-widest text-neutral-500">
-                  Agents
+                  Connected sources
                 </h2>
                 <p className="mt-2 max-w-2xl text-balance text-2xl font-medium tracking-tight md:text-3xl">
-                  A LangGraph orchestrator routes work to specialists.
+                  Plug in everything that explains who you are as a developer.
                 </p>
               </div>
               <a
@@ -222,42 +180,17 @@ export default function Home() {
               </a>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
-              {AGENTS.map((a) => (
+              {SOURCES.map((s) => (
                 <div
-                  key={a.name}
+                  key={s.name}
                   className="flex items-start justify-between gap-4 rounded-lg border border-[var(--border)] bg-[var(--muted)] p-4"
                 >
                   <div>
                     <h3 className="text-sm font-medium text-neutral-100">
-                      {a.name}
+                      {s.name}
                     </h3>
-                    <p className="mt-1 text-sm text-neutral-400">{a.role}</p>
+                    <p className="mt-1 text-sm text-neutral-400">{s.detail}</p>
                   </div>
-                  <StateChip state={a.state} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Sources */}
-        <section className="border-t border-[var(--border)]/60">
-          <div className="mx-auto max-w-6xl px-6 py-20">
-            <div className="mb-10">
-              <h2 className="text-xs uppercase tracking-widest text-neutral-500">
-                Connected sources
-              </h2>
-              <p className="mt-2 max-w-2xl text-balance text-2xl font-medium tracking-tight md:text-3xl">
-                Plug in everything that explains who you are as a developer.
-              </p>
-            </div>
-            <div className="grid gap-3 md:grid-cols-3">
-              {SOURCES.map((s) => (
-                <div
-                  key={s.name}
-                  className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--muted)] p-4"
-                >
-                  <span className="text-sm text-neutral-100">{s.name}</span>
                   <StateChip state={s.state} />
                 </div>
               ))}
@@ -272,12 +205,12 @@ export default function Home() {
               Try it
             </h2>
             <p className="mt-2 text-balance text-3xl font-medium tracking-tight md:text-4xl">
-              Drop in a GitHub username.
+              Drop in a GitHub username and watch the agents go.
             </p>
             <p className="mx-auto mt-3 max-w-xl text-sm text-neutral-400">
-              The profile builds in a few seconds. Add your resume to enrich
-              experience and education, then ask the command bar to do
-              something useful.
+              The profile builds in a few seconds. From the result page, paste
+              your resume or connect Vercel to enrich it, then ask the command
+              bar to do something useful.
             </p>
             <form
               action={goToProfile}

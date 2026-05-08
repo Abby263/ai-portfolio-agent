@@ -37,7 +37,7 @@ The orchestrator decides which agent(s) to invoke for a given request. Each agen
 | **Orchestrator**               | Routes requests, plans multi-step actions, aggregates results.     |
 | **Profile Builder**            | Assembles the developer profile from indexed sources.              |
 | **GitHub Agent**               | Reads repos, READMEs, commits; later writes branches/PRs.          |
-| **Vercel Agent**               | Lists deployments, matches them to repos, reads project metadata.  |
+| **Vercel Agent**               | Lists deployments (via per-user token), matches them to repos, surfaces live URLs.  |
 | **Resume Parser**              | Extracts skills/experience/achievements from uploaded resumes.     |
 | **Storytelling Agent**         | Generates the developer's narrative, project summaries, taglines.  |
 | **README Update Agent**        | Drafts README improvements with diagrams placeholders.             |
