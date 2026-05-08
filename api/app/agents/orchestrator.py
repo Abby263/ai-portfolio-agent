@@ -6,6 +6,7 @@ from ..connectors.github import GitHubConnector, now_utc
 from ..models.profile import Profile, Resume
 from .profile_builder import synthesize_profile
 from .resume_parser import parse_resume
+from .storyteller import tell_story
 
 
 class AgentState(TypedDict, total=False):
@@ -42,16 +43,23 @@ async def synthesize_node(state: AgentState) -> AgentState:
     return {"profile": profile}
 
 
+async def tell_story_node(state: AgentState) -> AgentState:
+    profile = state["profile"]
+    return {"profile": tell_story(profile)}
+
+
 def _build_graph():
     g = StateGraph(AgentState)
     g.add_node("fetch_github", fetch_github_node)
     g.add_node("parse_resume", parse_resume_node)
     g.add_node("synthesize", synthesize_node)
+    g.add_node("tell_story", tell_story_node)
     g.add_edge(START, "fetch_github")
     g.add_edge(START, "parse_resume")
     g.add_edge("fetch_github", "synthesize")
     g.add_edge("parse_resume", "synthesize")
-    g.add_edge("synthesize", END)
+    g.add_edge("synthesize", "tell_story")
+    g.add_edge("tell_story", END)
     return g.compile()
 
 

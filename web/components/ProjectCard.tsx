@@ -21,6 +21,15 @@ export function ProjectCard({ project }: { project: Project }) {
           {project.description}
         </p>
       ) : null}
+      {project.highlights.length > 0 ? (
+        <ul className="mt-3 list-inside list-disc space-y-1 text-xs text-neutral-300">
+          {project.highlights.slice(0, 3).map((h, i) => (
+            <li key={i} className="line-clamp-2">
+              {h}
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-4 text-xs text-neutral-500">
         {project.language ? (
           <span className="rounded-md border border-[var(--border)] px-2 py-0.5">

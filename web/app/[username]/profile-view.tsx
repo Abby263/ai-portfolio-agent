@@ -16,9 +16,28 @@ export function ProfileView({ initial }: { initial: Profile }) {
     <>
       <ProfileHero profile={profile} />
 
+      {profile.tagline ? (
+        <p className="mt-6 text-balance text-2xl font-medium leading-snug text-[var(--accent-soft)]">
+          {profile.tagline}
+        </p>
+      ) : null}
+
       <div className="mt-6">
         <ResumeEnhancer initial={profile} onUpdate={setProfile} />
       </div>
+
+      {profile.themes.length > 0 ? (
+        <div className="mt-6 flex flex-wrap gap-2">
+          {profile.themes.map((t) => (
+            <span
+              key={t}
+              className="rounded-full border border-[var(--border)] px-2.5 py-1 text-xs text-neutral-400"
+            >
+              {t}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       {profile.resume_summary ? (
         <section className="mt-8 rounded-xl border border-[var(--border)] bg-[var(--muted)] p-5">

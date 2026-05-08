@@ -54,8 +54,10 @@ class Profile(BaseModel):
     username: str
     display_name: str | None = None
     headline: str | None = None
+    tagline: str | None = None
     bio: str | None = None
     story: str | None = None
+    themes: list[str] = Field(default_factory=list)
     avatar_url: str | None = None
     location: str | None = None
     skills: list[str] = Field(default_factory=list)

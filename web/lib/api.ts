@@ -41,8 +41,10 @@ export type Profile = {
   username: string;
   display_name: string | null;
   headline: string | null;
+  tagline: string | null;
   bio: string | null;
   story: string | null;
+  themes: string[];
   avatar_url: string | null;
   location: string | null;
   skills: string[];
