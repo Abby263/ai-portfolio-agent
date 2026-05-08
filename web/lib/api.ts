@@ -82,3 +82,35 @@ export async function buildProfile(
   }
   return res.json();
 }
+
+export type SuggestedAction = {
+  label: string;
+  description: string;
+  kind:
+    | "readme_update"
+    | "pr_creation"
+    | "case_study"
+    | "linkedin_post"
+    | "other";
+};
+
+export type CommandResponse = {
+  answer: string;
+  suggested_actions: SuggestedAction[];
+};
+
+export async function runCommand(
+  username: string,
+  command: string,
+  profile?: Profile,
+): Promise<CommandResponse> {
+  const res = await fetch(`${API_URL}/api/command`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, command, profile: profile ?? null }),
+  });
+  if (!res.ok) {
+    throw new Error(`Command failed (${res.status})`);
+  }
+  return res.json();
+}
