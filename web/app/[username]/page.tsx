@@ -35,33 +35,68 @@ export default async function ProfilePage({
   const isEditMode = isOwner || fallbackEdit;
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-12">
-      <header className="mb-8 flex items-center justify-between">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-xs text-neutral-500 transition hover:text-[var(--accent-soft)]"
-        >
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
-          ai-portfolio-agent
-        </Link>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-neutral-600">
-            /{profile.username}
+    <>
+      {/* Top credits bar — visible across the full viewport */}
+      <div className="border-b border-[var(--border)]/60 bg-[var(--muted)]/40 backdrop-blur">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-6 py-2 text-xs text-neutral-400">
+          <span className="flex items-center gap-2">
+            <span
+              aria-hidden
+              className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--accent-soft)]"
+            />
+            Built with{" "}
+            <Link
+              href="/"
+              className="font-medium text-[var(--accent-soft)] underline-offset-2 hover:underline"
+            >
+              ai-portfolio-agent
+            </Link>
+            <span className="hidden sm:inline">
+              {" "}— create your own from a GitHub username
+            </span>
           </span>
-          <AuthBadge />
+          <span className="flex items-center gap-2 text-neutral-500">
+            Credits:
+            <a
+              href="https://github.com/Abby263"
+              target="_blank"
+              rel="noreferrer"
+              className="text-neutral-200 underline-offset-2 hover:text-[var(--accent-soft)] hover:underline"
+            >
+              Abhay
+            </a>
+          </span>
         </div>
-      </header>
+      </div>
 
-      <ProfileView
-        initial={profile}
-        isEditMode={isEditMode}
-        authState={{
-          clerkReady: CLERK_ENABLED,
-          publishableConfigured: CLERK_PUBLISHABLE_CONFIGURED,
-          serverConfigured: CLERK_SERVER_CONFIGURED,
-          signedInGitHubUsername: owner,
-        }}
-      />
-    </main>
+      <main className="mx-auto max-w-5xl px-6 py-10 md:py-12">
+        <header className="mb-8 flex items-center justify-between">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xs text-neutral-500 transition hover:text-[var(--accent-soft)]"
+          >
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
+            ai-portfolio-agent
+          </Link>
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-xs text-neutral-600">
+              /{profile.username}
+            </span>
+            <AuthBadge />
+          </div>
+        </header>
+
+        <ProfileView
+          initial={profile}
+          isEditMode={isEditMode}
+          authState={{
+            clerkReady: CLERK_ENABLED,
+            publishableConfigured: CLERK_PUBLISHABLE_CONFIGURED,
+            serverConfigured: CLERK_SERVER_CONFIGURED,
+            signedInGitHubUsername: owner,
+          }}
+        />
+      </main>
+    </>
   );
 }

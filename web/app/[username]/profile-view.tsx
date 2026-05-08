@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 
-import { CommandBar } from "@/components/CommandBar";
 import { EducationList } from "@/components/EducationList";
 import { ExperienceTimeline } from "@/components/ExperienceTimeline";
 import { ProfileHero } from "@/components/ProfileHero";
 import { ProjectCard } from "@/components/ProjectCard";
 import { ReadmeWriter } from "@/components/ReadmeWriter";
+import { SideChat } from "@/components/SideChat";
 import { SkillCloud } from "@/components/SkillCloud";
 import { Sources } from "@/components/Sources";
 import { StatsStrip } from "@/components/StatsStrip";
@@ -32,9 +32,12 @@ export function ProfileView({
   const [activeAction, setActiveAction] = useState<SuggestedAction | null>(
     null,
   );
+  const [chatOpen, setChatOpen] = useState(false);
   const liveProjects = profile.projects.filter(
     (project) => project.deployment_url || project.homepage,
   ).length;
+  const pinnedProjects = profile.projects.filter((p) => p.pinned);
+  const otherProjects = profile.projects.filter((p) => !p.pinned);
 
   function handleAction(action: SuggestedAction) {
     if (!isEditMode) {
@@ -57,6 +60,35 @@ export function ProfileView({
     <>
       <ProfileHero profile={profile} />
 
+      {/* "Talk with this portfolio" CTA — discoverable, opens the side chat */}
+      <button
+        type="button"
+        onClick={() => setChatOpen(true)}
+        className="group mt-6 flex w-full items-center justify-between gap-4 overflow-hidden rounded-lg border border-[var(--border)] bg-[linear-gradient(135deg,var(--muted),var(--background)_55%,rgba(94,234,212,0.08))] px-5 py-4 text-left transition hover:border-[var(--accent-soft)]/60"
+      >
+        <div className="flex items-center gap-3">
+          <span
+            aria-hidden
+            className="relative flex h-2.5 w-2.5 shrink-0 items-center justify-center"
+          >
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--accent-soft)]/60" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[var(--accent-soft)]" />
+          </span>
+          <div>
+            <p className="text-sm font-medium text-neutral-100">
+              Chat with this portfolio
+            </p>
+            <p className="text-xs text-neutral-400">
+              Ask about projects, experience, or anything else — answers are
+              grounded in everything below.
+            </p>
+          </div>
+        </div>
+        <span className="shrink-0 rounded-md border border-[var(--border)] bg-[var(--background)]/80 px-3 py-1.5 text-xs text-[var(--accent-soft)] transition group-hover:border-[var(--accent-soft)]/60">
+          Open chat →
+        </span>
+      </button>
+
       <div className="mt-8">
         <StatsStrip profile={profile} />
       </div>
@@ -72,9 +104,7 @@ export function ProfileView({
       {profile.story ? (
         <section className="mt-14 grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
           <div>
-            <h2 className="text-xs uppercase text-neutral-500">
-              Story
-            </h2>
+            <h2 className="text-xs uppercase text-neutral-500">Story</h2>
             <article className="prose-portfolio mt-4 whitespace-pre-line text-lg leading-[1.75] text-neutral-200">
               <span className="float-left mr-2 mt-1 select-none bg-gradient-to-br from-[var(--accent-soft)] to-[var(--accent-warm)] bg-clip-text font-serif text-5xl font-semibold leading-none text-transparent md:mr-3 md:text-6xl">
                 {profile.story.trim().charAt(0)}
@@ -83,9 +113,7 @@ export function ProfileView({
             </article>
           </div>
           <aside className="rounded-lg border border-[var(--border)] bg-[var(--muted)] p-5">
-            <h3 className="text-xs uppercase text-neutral-500">
-              Focus
-            </h3>
+            <h3 className="text-xs uppercase text-neutral-500">Focus</h3>
             <div className="mt-4 space-y-4">
               {profile.themes.slice(0, 4).map((theme) => (
                 <div
@@ -115,9 +143,7 @@ export function ProfileView({
 
       {profile.skills.length > 0 ? (
         <section className="mt-14">
-          <h2 className="text-xs uppercase text-neutral-500">
-            Skills
-          </h2>
+          <h2 className="text-xs uppercase text-neutral-500">Skills</h2>
           <div className="mt-3">
             <SkillCloud skills={profile.skills} />
           </div>
@@ -126,16 +152,37 @@ export function ProfileView({
 
       {profile.experiences.length > 0 ? (
         <section className="mt-14">
-          <h2 className="text-xs uppercase text-neutral-500">
-            Experience
-          </h2>
+          <h2 className="text-xs uppercase text-neutral-500">Experience</h2>
           <div className="mt-5">
             <ExperienceTimeline items={profile.experiences} />
           </div>
         </section>
       ) : null}
 
-      {profile.projects.length > 0 ? (
+      {pinnedProjects.length > 0 ? (
+        <section className="mt-14">
+          <div className="flex items-baseline justify-between">
+            <div>
+              <h2 className="text-xs uppercase text-neutral-500">
+                Featured work
+              </h2>
+              <p className="mt-1 text-lg font-medium text-neutral-100">
+                Pinned by {profile.display_name ?? profile.username}
+              </p>
+            </div>
+            <span className="font-mono text-xs text-neutral-600">
+              {pinnedProjects.length} pinned
+            </span>
+          </div>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            {pinnedProjects.slice(0, 6).map((p) => (
+              <ProjectCard key={p.name} project={p} featured />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {otherProjects.length > 0 ? (
         <section className="mt-14">
           <div className="flex items-baseline justify-between">
             <div>
@@ -143,15 +190,17 @@ export function ProfileView({
                 Project gallery
               </h2>
               <p className="mt-1 text-lg font-medium text-neutral-100">
-                Pinned repositories and deployed apps
+                {pinnedProjects.length > 0
+                  ? "More from the same workshop"
+                  : "Pinned repositories and deployed apps"}
               </p>
             </div>
             <span className="text-xs text-neutral-600">
-              {liveProjects} live - {profile.projects.length} total
+              {liveProjects} live · {profile.projects.length} total
             </span>
           </div>
           <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {profile.projects.map((p) => (
+            {otherProjects.slice(0, 12).map((p) => (
               <ProjectCard key={p.name} project={p} />
             ))}
           </div>
@@ -160,21 +209,23 @@ export function ProfileView({
 
       {profile.education.length > 0 ? (
         <section className="mt-14">
-          <h2 className="text-xs uppercase text-neutral-500">
-            Education
-          </h2>
+          <h2 className="text-xs uppercase text-neutral-500">Education</h2>
           <div className="mt-3">
             <EducationList items={profile.education} />
           </div>
         </section>
       ) : null}
 
-      <div className="mt-14">
-        <CommandBar profile={profile} onAction={handleAction} />
-      </div>
+      {/* Side chat (Cursor-style) — replaces the inline command bar */}
+      <SideChat
+        profile={profile}
+        open={chatOpen}
+        onOpenChange={setChatOpen}
+        onAction={handleAction}
+      />
 
       {isEditMode && activeAction?.kind === "readme_update" ? (
-        <div className="mt-4">
+        <div className="mt-14">
           <ReadmeWriter
             profile={profile}
             onClose={() => setActiveAction(null)}
@@ -183,7 +234,7 @@ export function ProfileView({
       ) : null}
 
       {!isEditMode && activeAction ? (
-        <div className="mt-4 rounded-lg border border-[var(--accent-soft)]/30 bg-[var(--accent)]/5 p-4 text-sm text-neutral-300">
+        <div className="mt-14 rounded-lg border border-[var(--accent-soft)]/30 bg-[var(--accent)]/5 p-4 text-sm text-neutral-300">
           <p className="font-medium text-neutral-100">
             Sign in to run this action
           </p>
@@ -196,7 +247,7 @@ export function ProfileView({
 
       <p className="mt-16 text-xs text-neutral-600">
         Generated {new Date(profile.generated_at).toLocaleString()}
-        {isEditMode ? " - Edit mode" : ""}
+        {isEditMode ? " · Edit mode" : ""}
       </p>
     </>
   );
@@ -235,25 +286,19 @@ function CareerSnapshot({ profile }: { profile: Profile }) {
         </div>
         <div className="grid gap-px bg-[var(--border)] md:grid-cols-3 lg:grid-cols-1">
           <div className="bg-[var(--muted)] p-5">
-            <p className="text-[10px] uppercase text-neutral-500">
-              Roles
-            </p>
+            <p className="text-[10px] uppercase text-neutral-500">Roles</p>
             <p className="mt-1 font-mono text-2xl text-neutral-100">
               {profile.experiences.length}
             </p>
           </div>
           <div className="bg-[var(--muted)] p-5">
-            <p className="text-[10px] uppercase text-neutral-500">
-              Education
-            </p>
+            <p className="text-[10px] uppercase text-neutral-500">Education</p>
             <p className="mt-1 font-mono text-2xl text-neutral-100">
               {profile.education.length}
             </p>
           </div>
           <div className="bg-[var(--muted)] p-5">
-            <p className="text-[10px] uppercase text-neutral-500">
-              Source
-            </p>
+            <p className="text-[10px] uppercase text-neutral-500">Source</p>
             <p className="mt-1 text-sm text-[var(--accent-soft)]">
               Resume connected
             </p>
