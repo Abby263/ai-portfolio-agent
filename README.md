@@ -1,72 +1,90 @@
 # ai-portfolio-agent
 
-> **Live demo** · Web: <https://web-xi-roan-10.vercel.app> · API: <https://api-seven-omega-54.vercel.app>
+> **Live demo:** <https://ai-portfolio-agent.vercel.app> · **API:** <https://ai-portfolio-agent-api.vercel.app>
 >
-> Try it: <https://web-xi-roan-10.vercel.app/torvalds>
+> Try it: <https://ai-portfolio-agent.vercel.app/torvalds>
 
 `ai-portfolio-agent` is an AI-powered developer portfolio and project control platform.
 
 It connects with apps like GitHub, Vercel, LinkedIn, Instagram, uploaded resumes, blogs, and project documents to automatically build a rich developer profile. The platform understands a developer's work, creates a professional storyline, generates project summaries, and keeps the portfolio updated as new projects are added.
 
-Beyond showcasing work, it also acts as an agentic command center. Developers can ask the agent to perform actions such as updating README files across repositories, generating case studies for deployed projects, creating pull requests, improving portfolio content, and validating deployment updates.
+Beyond showcasing work, it acts as an agentic command center. Developers can ask the agent to perform actions such as updating README files across repositories, generating case studies for deployed projects, creating pull requests, improving portfolio content, and validating deployment updates.
 
-The backend uses LangGraph-based AI agents to retrieve, reason, generate, and act across the developer's connected ecosystem.
+The backend uses **LangGraph**-based AI agents to retrieve, reason, generate, and act across the developer's connected ecosystem.
 
 ---
 
+## Features
+
+- **Profile from GitHub** — repos, languages, topics, stars merged into a structured profile.
+- **Resume parser** — paste plain-text or markdown; experience, education, and skills are extracted and merged with provenance.
+- **Storytelling agent** — generates a tagline, narrative, recurring themes, and per-project highlights from the merged profile.
+- **Conversational command bar** — "Ask my portfolio" UI plus a `POST /api/command` endpoint with structured suggested actions.
+- **README Update Agent** — drafts a structured README for any of your repos and opens a real pull request after explicit human review.
+- **Deterministic fallbacks everywhere** — no API key required to run the demo end-to-end.
+
 ## Stack
 
-- **Frontend** — Next.js (App Router, TypeScript, Tailwind) in [web/](web/)
-- **Backend** — FastAPI (Python 3.11+) in [api/](api/)
-- **Agents** — LangGraph orchestrator with per-domain agents (Profile Builder, GitHub, Vercel, …)
-- **Connectors** — GitHub, Vercel, LinkedIn, Instagram, resume parser (added incrementally)
+| Layer       | Choice                                          |
+|-------------|-------------------------------------------------|
+| Frontend    | Next.js 15 (App Router) · React 19 · Tailwind v4 |
+| Backend     | FastAPI · Python 3.11+                           |
+| Agents      | LangGraph orchestrator + per-domain agents       |
+| LLM         | OpenAI (`gpt-4o-mini`) — optional                |
+| Hosting     | Vercel (web) + Vercel Python serverless (api)    |
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the agent topology and slice plan.
+
+## LangGraph topology
+
+```
+START ─┬─→ fetch_github ─┐
+       └─→ parse_resume ─┴─→ synthesize ─→ tell_story ─→ END
+```
+
+Plus the read-side `route_command` and write-side `draft_readme` + `create_pr` agents triggered through API endpoints.
 
 ## Repo layout
 
 ```
 ai-portfolio-agent/
-├── web/        # Next.js frontend
 ├── api/        # FastAPI + LangGraph backend
-└── docs/       # Architecture & design docs
+├── web/        # Next.js frontend
+├── docs/       # Architecture & design docs
+├── SETUP.md    # End-to-end deployment guide
+└── LICENSE     # PolyForm Noncommercial 1.0.0
 ```
 
 ## Quickstart
 
-### Backend
+For local development and full deployment instructions — including how to obtain each secret — see **[SETUP.md](SETUP.md)**.
 
 ```bash
-cd api
-python -m venv .venv && source .venv/bin/activate
-pip install -e .
-cp .env.example .env   # then fill in any API keys you have
-uvicorn app.main:app --reload --port 8000
+# backend
+cd api && python -m venv .venv && source .venv/bin/activate && pip install -e . && uvicorn app.main:app --reload --port 8000
+
+# frontend (in another terminal)
+cd web && npm install && npm run dev
+# → open http://localhost:3000
 ```
 
-The API runs at `http://localhost:8000`. Try:
+## API
 
-```bash
-curl http://localhost:8000/health
-curl http://localhost:8000/api/profile/torvalds
-```
+| Method | Path                              | Purpose                                                     |
+|--------|-----------------------------------|-------------------------------------------------------------|
+| GET    | `/health`                         | Liveness check.                                             |
+| GET    | `/api/profile/{username}`         | Builds a profile from GitHub only (fast path).              |
+| POST   | `/api/profile/{username}`         | Builds a profile, optionally merging an uploaded resume.    |
+| POST   | `/api/command`                    | Runs the command-router agent against a profile.            |
+| POST   | `/api/actions/draft-readme`       | Drafts a proposed README for a repo. Read-only.             |
+| POST   | `/api/actions/create-pr`          | Branches, commits, opens a PR. Requires `GITHUB_TOKEN`.     |
 
-### Frontend
+Interactive OpenAPI docs: <https://ai-portfolio-agent-api.vercel.app/docs>
 
-```bash
-cd web
-npm install
-npm run dev
-```
+## Contributing
 
-The app runs at `http://localhost:3000` and proxies API calls to `http://localhost:8000`.
+All changes land via PRs against `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow.
 
-## Current slice
+## License
 
-The first vertical slice wires:
-
-```
-GitHub username → GitHub connector → Profile Builder Agent (LangGraph) → /api/profile/{username} → web UI
-```
-
-Subsequent slices layer on Vercel, resume parsing, the agent command bar, and write-side actions (README updates, PRs, case study generation).
+[PolyForm Noncommercial 1.0.0](LICENSE) — free for personal, educational, research, and other non-commercial use. **Commercial use requires a separate license.** Open an issue or contact the repository owner if you'd like to discuss a commercial arrangement.
