@@ -39,9 +39,7 @@ export function ProfileHero({ profile }: { profile: Profile }) {
   const featuredProjects = profile.projects.filter((project) => project.pinned)
     .length;
   const email = profile.links.email;
-  const hasResume = profile.sources.some(
-    (source) => source.connector === "resume",
-  );
+  const hasResume = Boolean(profile.resume_file_available);
   const visibleLinks = Object.entries(profile.links).filter(
     ([key]) => key !== "email",
   );

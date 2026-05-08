@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 
 import { useAuth } from "@clerk/nextjs";
 
@@ -51,7 +51,7 @@ function SourcesInner({
   getToken: GetToken;
 }) {
   const [resumeText, setResumeText] = useState("");
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [resumeFileLabel, setResumeFileLabel] = useState<string | null>(null);
   const [openRow, setOpenRow] = useState<Row>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -62,19 +62,35 @@ function SourcesInner({
     (p) => p.deployment_url !== null || p.homepage !== null,
   );
 
-  function applyResume() {
+  function applyResumeFile(file: File | null) {
+    if (!file || pending) return;
+    setResumeFileLabel(`${file.name} - ${(file.size / 1024).toFixed(1)} KB`);
     setError(null);
     startTransition(async () => {
       try {
         const authToken = await getToken();
-        const next = resumeFile
-          ? await uploadResume(profile.username, { file: resumeFile, authToken })
-          : await buildProfile(profile.username, {
-              resumeText: resumeText.trim(),
-              authToken,
-            });
+        const next = await uploadResume(profile.username, { file, authToken });
         onUpdate(next);
-        setResumeFile(null);
+        setResumeText("");
+        setOpenRow(null);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to upload resume");
+      }
+    });
+  }
+
+  function applyResumeText() {
+    if (resumeText.trim().length < 30 || pending) return;
+    setError(null);
+    startTransition(async () => {
+      try {
+        const authToken = await getToken();
+        const next = await buildProfile(profile.username, {
+          resumeText: resumeText.trim(),
+          authToken,
+        });
+        onUpdate(next);
+        setResumeFileLabel(null);
         setResumeText("");
         setOpenRow(null);
       } catch (e) {
@@ -124,10 +140,10 @@ function SourcesInner({
           <ResumeForm
             text={resumeText}
             setText={setResumeText}
-            file={resumeFile}
-            setFile={setResumeFile}
+            fileLabel={resumeFileLabel}
             pending={pending}
-            onSubmit={applyResume}
+            onFileSubmit={applyResumeFile}
+            onTextSubmit={applyResumeText}
           />
         </Row>
       </div>
@@ -199,28 +215,28 @@ function Dot({ connected }: { connected: boolean }) {
 function ResumeForm({
   text,
   setText,
-  file,
-  setFile,
+  fileLabel,
   pending,
-  onSubmit,
+  onFileSubmit,
+  onTextSubmit,
 }: {
   text: string;
   setText: (v: string) => void;
-  file: File | null;
-  setFile: (v: File | null) => void;
+  fileLabel: string | null;
   pending: boolean;
-  onSubmit: () => void;
+  onFileSubmit: (file: File | null) => void;
+  onTextSubmit: () => void;
 }) {
-  const canSubmit = Boolean(file) || text.trim().length >= 30;
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const canSubmitText = text.trim().length >= 30;
 
   return (
     <>
       <p className="mb-2 text-xs text-neutral-500">
-        Upload a resume file or paste text. Owner-authenticated updates can be
-        saved when Vercel KV is configured; otherwise they apply to this rebuild
-        only.
+        Upload a resume file to enrich the portfolio, or paste resume text when
+        you do not have the file available.
       </p>
-      <label className="block rounded-lg border border-dashed border-[var(--border)] bg-[var(--background)] p-3 transition hover:border-[var(--accent-soft)]">
+      <div className="block rounded-lg border border-dashed border-[var(--border)] bg-[var(--background)] p-3 transition hover:border-[var(--accent-soft)]">
         <span className="block text-sm font-medium text-neutral-200">
           Upload resume
         </span>
@@ -228,17 +244,31 @@ function ResumeForm({
           PDF, DOCX, Markdown, or plain text under 4 MB.
         </span>
         <input
+          ref={fileInputRef}
           type="file"
+          aria-label="Resume file"
           accept=".pdf,.docx,.txt,.md,.markdown,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          className="mt-3 block w-full text-xs text-neutral-400 file:mr-3 file:rounded-md file:border-0 file:bg-[var(--accent)] file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white hover:file:bg-[var(--accent-soft)]"
+          disabled={pending}
+          onChange={(e) => {
+            onFileSubmit(e.target.files?.[0] ?? null);
+            e.currentTarget.value = "";
+          }}
+          className="sr-only"
         />
-        {file ? (
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={pending}
+          className="mt-3 rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {pending ? "Uploading..." : "Upload resume"}
+        </button>
+        {fileLabel ? (
           <span className="mt-2 block truncate font-mono text-xs text-[var(--accent-soft)]">
-            {file.name} - {(file.size / 1024).toFixed(1)} KB
+            {fileLabel}
           </span>
         ) : null}
-      </label>
+      </div>
       <div className="my-3 flex items-center gap-3 text-[10px] uppercase text-neutral-600">
         <span className="h-px flex-1 bg-[var(--border)]" />
         Or paste text
@@ -255,11 +285,11 @@ function ResumeForm({
       />
       <div className="mt-2 flex justify-end">
         <button
-          onClick={onSubmit}
-          disabled={pending || !canSubmit}
+          onClick={onTextSubmit}
+          disabled={pending || !canSubmitText}
           className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {pending ? "Parsing..." : "Apply resume"}
+          {pending ? "Parsing..." : "Apply resume text"}
         </button>
       </div>
     </>

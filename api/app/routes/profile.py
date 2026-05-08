@@ -73,6 +73,10 @@ def _resume_content_type(value: str | None, filename: str) -> str:
     return "text/plain; charset=utf-8"
 
 
+def _has_uploaded_resume_file(customizations: dict[str, Any]) -> bool:
+    return bool(customizations.get("resume_file_base64"))
+
+
 async def _build_with_customization_patch(
     username: str,
     patch: dict[str, Any],
@@ -110,6 +114,7 @@ async def _build_with_customization_patch(
             username,
             resume_text=customizations.get("resume_text"),
         )
+        profile.resume_file_available = _has_uploaded_resume_file(customizations)
         if kv_enabled():
             await save_profile_cache(username, profile)
         return profile
@@ -202,9 +207,10 @@ def _extract_resume_text(body: UploadResumeRequest) -> str:
 async def get_profile(username: str) -> Profile:
     if kv_enabled():
         cached = await get_profile_cache(username)
-        if cached is not None:
-            return cached
         customizations = await get_customizations(username)
+        if cached is not None:
+            cached.resume_file_available = _has_uploaded_resume_file(customizations)
+            return cached
     else:
         customizations = {}
     try:
@@ -212,6 +218,7 @@ async def get_profile(username: str) -> Profile:
             username,
             resume_text=customizations.get("resume_text"),
         )
+        profile.resume_file_available = _has_uploaded_resume_file(customizations)
         if kv_enabled():
             await save_profile_cache(username, profile)
         return profile
@@ -263,23 +270,10 @@ async def view_resume_endpoint(username: str) -> Response:
             },
         )
 
-    resume_text = customizations.get("resume_text")
-    if resume_text:
-        fallback_name = (
-            filename
-            if filename.lower().endswith((".txt", ".md"))
-            else "resume.txt"
-        )
-        return Response(
-            content=resume_text,
-            media_type="text/plain; charset=utf-8",
-            headers={
-                "Content-Disposition": f'inline; filename="{fallback_name}"',
-                "Cache-Control": "public, max-age=300",
-            },
-        )
-
-    raise HTTPException(status_code=404, detail="Resume is not available.")
+    raise HTTPException(
+        status_code=404,
+        detail="Uploaded resume file is not available. Re-upload the PDF resume from Sources.",
+    )
 
 
 @router.post("/profile/{username}/resume", response_model=Profile)
