@@ -88,9 +88,22 @@ Optional API env vars:
 - `GITHUB_WRITE_OWNER` — locks PR creation to a single GitHub username. Required when a shared token is in use.
 - `CORS_ORIGINS` — JSON list of allowed browser origins.
 
+## Why direct REST instead of MCP
+
+MCP (Model Context Protocol) servers exist for GitHub, Vercel, and similar — they expose tools that AI assistants like Claude Desktop or Cursor call locally on the user's machine. We chose **direct REST** in this product for three reasons:
+
+1. **Server-side, not client-assistant.** MCP shines when an AI client wants to call tools on the *user's* behalf with the user's credentials. Our backend is a multi-tenant service that holds and rotates its own credentials for read paths and uses per-user tokens for write paths. The MCP host/client model doesn't map cleanly.
+2. **Latency and surface area.** Each MCP hop adds a process boundary. Our agents already need narrow, predictable behavior (rate limits, retries, structured errors). Wrapping the GitHub REST API ourselves keeps that surface tight.
+3. **No extra runtime to deploy.** Serverless on Vercel doesn't host long-running MCP servers naturally — we'd need a separate process or sidecar.
+
+MCP is still interesting in the *other direction*: exposing this product **as** an MCP server so Claude Desktop / Cursor users can ask their assistant "show me my portfolio agent's view of repo X" or "have it open a PR." That's tracked under deferred decisions.
+
 ## Deferred decisions
 
 - Auth (likely Clerk or Auth.js once we add user accounts).
 - Multi-tenancy & background workers (Celery / Arq) once syncs get heavy.
 - Diagram generation strategy (Mermaid vs. Excalidraw vs. AI-rendered).
 - Per-user OAuth tokens for write-side actions (replaces the shared `GITHUB_TOKEN` model).
+- Clerk + GitHub OAuth so the profile owner is identified by their GitHub username and can edit their own profile in place.
+- A persistence layer (Vercel KV or Postgres) so owner customizations survive across requests.
+- Exposing this product **as** an MCP server so AI assistants can interact with the portfolio.

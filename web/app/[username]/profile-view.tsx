@@ -12,13 +12,24 @@ import { SkillCloud } from "@/components/SkillCloud";
 import { Sources } from "@/components/Sources";
 import type { Profile, SuggestedAction } from "@/lib/api";
 
-export function ProfileView({ initial }: { initial: Profile }) {
+export function ProfileView({
+  initial,
+  isEditMode,
+}: {
+  initial: Profile;
+  isEditMode: boolean;
+}) {
   const [profile, setProfile] = useState(initial);
   const [activeAction, setActiveAction] = useState<SuggestedAction | null>(
     null,
   );
 
   function handleAction(action: SuggestedAction) {
+    if (!isEditMode) {
+      // Public viewers see the suggestion but can't trigger write actions
+      setActiveAction({ ...action, kind: "other" });
+      return;
+    }
     if (action.kind === "readme_update") {
       setActiveAction(action);
       return;
@@ -36,7 +47,7 @@ export function ProfileView({ initial }: { initial: Profile }) {
       <ProfileHero profile={profile} />
 
       {profile.tagline ? (
-        <p className="mt-6 text-balance text-2xl font-medium leading-snug text-[var(--accent-soft)]">
+        <p className="mt-6 text-balance text-2xl font-medium leading-snug text-[var(--accent-soft)] md:text-3xl">
           {profile.tagline}
         </p>
       ) : null}
@@ -46,7 +57,7 @@ export function ProfileView({ initial }: { initial: Profile }) {
           {profile.themes.map((t) => (
             <span
               key={t}
-              className="rounded-full border border-[var(--border)] px-2.5 py-1 text-xs text-neutral-400"
+              className="rounded-full border border-[var(--border)] bg-[var(--muted)]/40 px-3 py-1 text-xs text-neutral-300"
             >
               {t}
             </span>
@@ -54,12 +65,14 @@ export function ProfileView({ initial }: { initial: Profile }) {
         </div>
       ) : null}
 
-      <div className="mt-8">
-        <Sources profile={profile} onUpdate={setProfile} />
-      </div>
+      {isEditMode ? (
+        <div className="mt-8">
+          <Sources profile={profile} onUpdate={setProfile} />
+        </div>
+      ) : null}
 
       {profile.resume_summary ? (
-        <section className="mt-10 rounded-xl border border-[var(--border)] bg-[var(--muted)] p-5">
+        <section className="mt-10 rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--muted)] to-[var(--muted)]/40 p-5">
           <p className="text-neutral-200 leading-relaxed">
             {profile.resume_summary}
           </p>
@@ -71,7 +84,7 @@ export function ProfileView({ initial }: { initial: Profile }) {
           <h2 className="text-xs uppercase tracking-widest text-neutral-500">
             Story
           </h2>
-          <div className="mt-3 whitespace-pre-line text-neutral-200 leading-relaxed">
+          <div className="mt-3 whitespace-pre-line text-lg leading-relaxed text-neutral-200">
             {profile.story}
           </div>
         </section>
@@ -101,9 +114,15 @@ export function ProfileView({ initial }: { initial: Profile }) {
 
       {profile.projects.length > 0 ? (
         <section className="mt-12">
-          <h2 className="text-xs uppercase tracking-widest text-neutral-500">
-            Projects
-          </h2>
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-xs uppercase tracking-widest text-neutral-500">
+              Projects
+            </h2>
+            <span className="text-xs text-neutral-600">
+              {profile.projects.filter((p) => p.deployment_url).length} live ·{" "}
+              {profile.projects.length} total
+            </span>
+          </div>
           <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {profile.projects.slice(0, 12).map((p) => (
               <ProjectCard key={p.name} project={p} />
@@ -127,7 +146,7 @@ export function ProfileView({ initial }: { initial: Profile }) {
         <CommandBar profile={profile} onAction={handleAction} />
       </div>
 
-      {activeAction?.kind === "readme_update" ? (
+      {isEditMode && activeAction?.kind === "readme_update" ? (
         <div className="mt-4">
           <ReadmeWriter
             profile={profile}
@@ -136,8 +155,45 @@ export function ProfileView({ initial }: { initial: Profile }) {
         </div>
       ) : null}
 
-      <p className="mt-16 text-xs text-neutral-600">
+      {!isEditMode && activeAction ? (
+        <div className="mt-4 rounded-xl border border-[var(--accent-soft)]/40 bg-[var(--accent)]/5 p-4 text-sm text-neutral-300">
+          <p className="font-medium text-neutral-100">
+            Sign in to run write actions
+          </p>
+          <p className="mt-1 text-neutral-400">
+            {activeAction.description} Only the profile owner can trigger
+            actions like opening PRs.
+          </p>
+        </div>
+      ) : null}
+
+      {!isEditMode ? (
+        <section className="mt-16 rounded-2xl border border-[var(--border)] bg-[var(--muted)]/40 p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-medium text-neutral-100">
+                Are you @{profile.username}?
+              </h3>
+              <p className="mt-1 text-xs text-neutral-400">
+                Sign in with GitHub to add your resume, connect Vercel, and let
+                the agents update your repos. Coming soon.
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled
+              className="cursor-not-allowed rounded-md border border-[var(--border)] bg-[var(--muted)] px-3 py-1.5 text-xs text-neutral-500"
+              title="GitHub sign-in is being wired up"
+            >
+              Sign in with GitHub →
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      <p className="mt-12 text-xs text-neutral-600">
         Generated {new Date(profile.generated_at).toLocaleString()}
+        {isEditMode ? " · Edit mode" : ""}
       </p>
     </>
   );
