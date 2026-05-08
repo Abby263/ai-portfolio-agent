@@ -57,6 +57,7 @@ export type Profile = {
   education: Education[];
   resume_summary: string | null;
   resume_file_available?: boolean;
+  resume_file_content_type?: string | null;
   links: Record<string, string>;
   sources: Source[];
   generated_at: string;

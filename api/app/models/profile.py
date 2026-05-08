@@ -71,6 +71,7 @@ class Profile(BaseModel):
     education: list[Education] = Field(default_factory=list)
     resume_summary: str | None = None
     resume_file_available: bool = False
+    resume_file_content_type: str | None = None
     links: dict[str, str] = Field(default_factory=dict)
     sources: list[Source] = Field(default_factory=list)
     generated_at: datetime

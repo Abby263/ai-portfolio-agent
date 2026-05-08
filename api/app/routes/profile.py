@@ -77,6 +77,13 @@ def _has_uploaded_resume_file(customizations: dict[str, Any]) -> bool:
     return bool(customizations.get("resume_file_base64"))
 
 
+def _uploaded_resume_content_type(customizations: dict[str, Any]) -> str | None:
+    if not _has_uploaded_resume_file(customizations):
+        return None
+    filename = _safe_resume_filename(customizations.get("resume_filename"))
+    return _resume_content_type(customizations.get("resume_content_type"), filename)
+
+
 async def _build_with_customization_patch(
     username: str,
     patch: dict[str, Any],
@@ -115,6 +122,9 @@ async def _build_with_customization_patch(
             resume_text=customizations.get("resume_text"),
         )
         profile.resume_file_available = _has_uploaded_resume_file(customizations)
+        profile.resume_file_content_type = _uploaded_resume_content_type(
+            customizations
+        )
         if kv_enabled():
             await save_profile_cache(username, profile)
         return profile
@@ -210,6 +220,9 @@ async def get_profile(username: str) -> Profile:
         customizations = await get_customizations(username)
         if cached is not None:
             cached.resume_file_available = _has_uploaded_resume_file(customizations)
+            cached.resume_file_content_type = _uploaded_resume_content_type(
+                customizations
+            )
             return cached
     else:
         customizations = {}
@@ -219,6 +232,9 @@ async def get_profile(username: str) -> Profile:
             resume_text=customizations.get("resume_text"),
         )
         profile.resume_file_available = _has_uploaded_resume_file(customizations)
+        profile.resume_file_content_type = _uploaded_resume_content_type(
+            customizations
+        )
         if kv_enabled():
             await save_profile_cache(username, profile)
         return profile
