@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import type { Profile } from "@/lib/api";
+import { resumeUrl, type Profile } from "@/lib/api";
 
 function linkHref(label: string, value: string): string {
   if (label === "email") return `mailto:${value}`;
@@ -39,6 +39,9 @@ export function ProfileHero({ profile }: { profile: Profile }) {
   const featuredProjects = profile.projects.filter((project) => project.pinned)
     .length;
   const email = profile.links.email;
+  const hasResume = profile.sources.some(
+    (source) => source.connector === "resume",
+  );
   const visibleLinks = Object.entries(profile.links).filter(
     ([key]) => key !== "email",
   );
@@ -153,7 +156,26 @@ export function ProfileHero({ profile }: { profile: Profile }) {
                     {linkLabel(k, v)}
                   </a>
                 ))}
+                {hasResume ? (
+                  <a
+                    href={resumeUrl(profile.username)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-md border border-[var(--accent-soft)]/40 bg-[var(--accent)]/15 px-2.5 py-1 text-xs text-[var(--accent-soft)] transition hover:border-[var(--accent-soft)] hover:bg-[var(--accent)]/25"
+                  >
+                    View resume
+                  </a>
+                ) : null}
               </div>
+            ) : hasResume ? (
+              <a
+                href={resumeUrl(profile.username)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex rounded-md border border-[var(--accent-soft)]/40 bg-[var(--accent)]/15 px-2.5 py-1 text-xs text-[var(--accent-soft)] transition hover:border-[var(--accent-soft)] hover:bg-[var(--accent)]/25"
+              >
+                View resume
+              </a>
             ) : null}
           </div>
 
