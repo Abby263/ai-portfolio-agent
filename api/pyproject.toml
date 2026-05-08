@@ -13,6 +13,7 @@ dependencies = [
   "langchain-core>=0.3",
   "langchain-openai>=0.2",
   "python-dotenv>=1.0",
+  "pyjwt[crypto]>=2.8",
 ]
 
 [build-system]
