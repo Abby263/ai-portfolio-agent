@@ -203,7 +203,11 @@ export function ProfileView({
 }
 
 function CareerSnapshot({ profile }: { profile: Profile }) {
+  const resumeConnected = profile.sources.some(
+    (source) => source.connector === "resume",
+  );
   const hasResumeData =
+    resumeConnected ||
     profile.resume_summary ||
     profile.experiences.length > 0 ||
     profile.education.length > 0;

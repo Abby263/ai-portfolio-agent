@@ -259,6 +259,75 @@ def _parse_experience_block(lines: list[str]) -> Experience | None:
     )
 
 
+def _loose_experience_scan(text: str) -> list[Experience]:
+    """Fallback for PDF text without reliable section headings."""
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    experiences: list[Experience] = []
+    seen: set[str] = set()
+
+    for index, line in enumerate(lines):
+        lower = line.lower()
+        if not _looks_like_role(line) or len(line) > 140:
+            continue
+        if any(
+            marker in lower
+            for marker in ("github.com", "linkedin.com", "technical skills")
+        ):
+            continue
+
+        previous = lines[index - 1] if index > 0 else ""
+        include_previous = (
+            bool(previous)
+            and len(previous) < 80
+            and "." not in previous
+            and not _looks_like_role(previous)
+        )
+        block_start = index - 1 if include_previous else index
+        block_end = min(len(lines), index + 6)
+        block = [
+            candidate
+            for candidate in lines[block_start:block_end]
+            if "@" not in candidate
+            and "linkedin.com" not in candidate.lower()
+            and "github.com" not in candidate.lower()
+        ]
+        parsed = _parse_experience_block(block)
+        if parsed is None:
+            continue
+        key = f"{parsed.company.lower()}::{parsed.role.lower()}"
+        if key in seen:
+            continue
+        seen.add(key)
+        experiences.append(parsed)
+        if len(experiences) >= 6:
+            break
+
+    return experiences
+
+
+def _fallback_summary(text: str) -> str | None:
+    lines = []
+    for line in text.splitlines():
+        cleaned = " ".join(line.split()).strip()
+        lower = cleaned.lower()
+        if not cleaned:
+            continue
+        if any(token in lower for token in ("linkedin.com", "github.com", "email")):
+            continue
+        if re.search(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b", cleaned):
+            continue
+        if re.search(r"\+?\d[\d\s().-]{7,}\d", cleaned):
+            continue
+        if len(cleaned) < 24 and not _looks_like_role(cleaned):
+            continue
+        lines.append(cleaned)
+        if len(lines) >= 4:
+            break
+
+    summary = " ".join(lines)
+    return summary[:600] if len(summary) > 60 else None
+
+
 def _normalize_url(value: str) -> str:
     value = value.strip().rstrip(".,;)")
     if re.match(r"^https?://", value, re.IGNORECASE):
@@ -320,6 +389,8 @@ def _deterministic_parse(text: str) -> _ParsedResume:
         ]
         summary_text = " ".join(preamble_lines[1:4] or preamble_lines[:3])
         summary = summary_text[:600] if len(summary_text) > 80 else None
+    if not summary:
+        summary = _fallback_summary(text)
 
     skills_text = sections.get("skills", "")
     skills_tokens = re.split(r"[,;\n•\-·•|/]+", skills_text)
@@ -334,6 +405,8 @@ def _deterministic_parse(text: str) -> _ParsedResume:
         )
         if exp is not None
     ]
+    if not experiences:
+        experiences = _loose_experience_scan(text)
 
     education: list[Education] = []
     edu_text = sections.get("education", "")
