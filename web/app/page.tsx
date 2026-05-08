@@ -6,38 +6,56 @@ import { PortfolioNavLink } from "@/components/LandingUserPanels";
 const PIPELINE = [
   {
     label: "Connect",
-    detail: "Pull GitHub projects, deployed app links, and resume-backed career data.",
+    detail: "Bring in GitHub projects, live app links, and the uploaded resume.",
   },
   {
-    label: "Generate",
-    detail: "Build a public developer portfolio from repos, pinned work, and experience.",
+    label: "Explain",
+    detail: "Turn repos, pinned work, experience, and stack into a readable story.",
   },
   {
     label: "Share",
-    detail: "Send one link recruiters and collaborators can explore without a walkthrough.",
+    detail: "Send one public link instead of a resume, GitHub profile, and demo list.",
   },
   {
     label: "Chat",
-    detail: "Let visitors ask about projects, work history, tech stack, and resume details.",
+    detail: "Let visitors ask the portfolio about projects, work history, and tech stack.",
   },
   {
     label: "Act",
-    detail: "Use owner-only actions for README refreshes and repo follow-up work.",
+    detail: "Let the owner use the same context for README and repo follow-up work.",
   },
 ];
 
 const CHAT_EXAMPLES = [
   {
     speaker: "Recruiter",
-    text: "Which projects show production React and backend work?",
+    text: "Which projects prove production React, backend API work, and AI agent experience?",
   },
   {
     speaker: "Portfolio",
-    text: "The assistant compares pinned repos, deployed app links, languages, and resume experience.",
+    text: "I can answer from pinned repos, deployed demos, GitHub metadata, and resume experience.",
   },
   {
     speaker: "Developer",
-    text: "Ask your own portfolio what changed across projects before interviews or README updates.",
+    text: "What should I highlight before an interview, and which repos match this role?",
+  },
+];
+
+const AUDIENCES = [
+  {
+    label: "For recruiters",
+    title: "Screen the work, not just the keywords",
+    text: "Ask how the developer has used specific frameworks, which projects are live, what experience is resume-backed, and where the strongest proof of a tech stack lives.",
+  },
+  {
+    label: "For developers",
+    title: "Talk to your own GitHub and resume",
+    text: "Use the portfolio chat to refresh project context before interviews, summarize your career story, find the best repo examples, and prepare owner-reviewed repo updates.",
+  },
+  {
+    label: "For shared context",
+    title: "One link that answers follow-up questions",
+    text: "The public page shows the portfolio, while the chat stays grounded in GitHub metadata, deployed links, parsed resume details, and the uploaded resume PDF.",
   },
 ];
 
@@ -73,22 +91,23 @@ export default function Home() {
           <div className="mx-auto grid max-w-6xl gap-10 px-6 py-10 lg:grid-cols-[minmax(0,1fr)_420px] lg:py-12">
             <div>
               <p className="mb-3 text-sm font-medium text-[var(--accent-soft)]">
-                Shareable portfolio with a built-in project assistant
+                Share one link. Let the portfolio answer back.
               </p>
               <h1 className="max-w-3xl text-5xl font-semibold leading-[1.05] md:text-6xl">
-                Turn your GitHub and resume into a portfolio people can chat with.
+                Share a developer portfolio anyone can chat with.
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-neutral-300 md:text-lg">
-                AI Developer Portfolio Manager Agent creates a public page for
-                your strongest work, then lets visitors ask informed questions
-                about your projects, deployed apps, tech stack, career history,
-                education, and resume details.
+                AI Developer Portfolio Manager Agent turns GitHub projects,
+                deployed demos, and your resume into a public portfolio that can
+                answer follow-up questions for recruiters, collaborators, and
+                the developer who owns it.
               </p>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-neutral-400">
-                Recruiters can quickly understand how your experience maps to a
-                role. Developers can use the same chat to revisit their own
-                repos, explain architectural choices, and prepare for portfolio
-                reviews without digging through every README manually.
+                Recruiters can ask about work experience, role fit, live apps,
+                and tech stack without hunting through every repo. Developers
+                can ask their own portfolio to explain projects, summarize the
+                uploaded resume, and surface the strongest examples before an
+                interview or portfolio review.
               </p>
 
               <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -104,16 +123,16 @@ export default function Home() {
                 />
               </div>
               <div className="mt-5 max-w-xl rounded-lg border border-[var(--border)] bg-[var(--muted)] p-4 text-sm leading-6 text-neutral-400">
-                The portfolio chat is grounded in connected GitHub metadata,
-                deployed app URLs, saved resume text, parsed roles, education,
-                skills, and contact links.
+                The chat is grounded in connected GitHub metadata, deployed app
+                URLs, saved resume text, parsed roles, education, skills,
+                contact links, and the embedded resume PDF.
               </div>
             </div>
 
             <aside className="rounded-lg border border-[var(--border)] bg-[var(--muted)] p-5">
               <div className="flex items-center justify-between gap-4">
                 <h2 className="text-sm font-semibold text-neutral-100">
-                  Portfolio conversation
+                  Example conversation
                 </h2>
                 <span className="rounded-md border border-emerald-700/40 bg-emerald-950/40 px-2 py-0.5 text-[10px] text-emerald-300">
                   Live context
@@ -156,44 +175,39 @@ export default function Home() {
         </section>
 
         <section className="border-b border-[var(--border)]/70">
-          <div className="mx-auto grid max-w-6xl gap-6 px-6 py-14 md:grid-cols-3">
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--muted)] p-5">
+          <div className="mx-auto max-w-6xl px-6 py-14">
+            <div className="max-w-3xl">
               <p className="text-xs uppercase text-neutral-500">
-                Shareable portfolio
+                Why this exists
               </p>
-              <p className="mt-3 text-xl font-semibold text-neutral-100">
-                One link for the whole story
-              </p>
-              <p className="mt-2 text-sm leading-6 text-neutral-400">
-                Visitors see pinned projects, live app links, professional
-                history, education, skills, and contact details in one public
-                portfolio.
+              <h2 className="mt-3 text-3xl font-semibold leading-tight text-neutral-100 md:text-4xl">
+                A portfolio should do more than sit there.
+              </h2>
+              <p className="mt-4 text-base leading-7 text-neutral-400">
+                Static portfolios make people guess what matters. This one
+                gives the work a conversational layer, so every visitor can move
+                from “what has this developer built?” to “show me the proof”
+                without losing context.
               </p>
             </div>
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--muted)] p-5">
-              <p className="text-xs uppercase text-neutral-500">
-                Recruiter research
-              </p>
-              <p className="mt-3 text-xl font-semibold text-neutral-100">
-                Ask before the screen
-              </p>
-              <p className="mt-2 text-sm leading-6 text-neutral-400">
-                Recruiters can ask about work experience, role fit, tech stack,
-                deployed projects, and resume details without switching tabs.
-              </p>
-            </div>
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--muted)] p-5">
-              <p className="text-xs uppercase text-neutral-500">
-                Developer cockpit
-              </p>
-              <p className="mt-3 text-xl font-semibold text-neutral-100">
-                Talk to your own work
-              </p>
-              <p className="mt-2 text-sm leading-6 text-neutral-400">
-                Use the same portfolio chat to revisit repo context, summarize
-                your resume, prepare interviews, and queue owner-reviewed repo
-                actions.
-              </p>
+
+            <div className="mt-8 grid gap-6 md:grid-cols-3">
+              {AUDIENCES.map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-lg border border-[var(--border)] bg-[var(--muted)] p-5"
+                >
+                  <p className="text-xs uppercase text-neutral-500">
+                    {item.label}
+                  </p>
+                  <p className="mt-3 text-xl font-semibold text-neutral-100">
+                    {item.title}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-neutral-400">
+                    {item.text}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
