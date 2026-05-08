@@ -108,10 +108,11 @@ function SourcesInner({
       <header className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
         <div>
           <h2 className="text-sm font-medium text-neutral-100">
-            Build with your sources
+            Signed-user source connections
           </h2>
           <p className="mt-1 text-xs text-neutral-500">
-            Add owner-only sources and rebuild the public profile.
+            Connections saved for @{profile.username} after Clerk verifies this
+            signed-in GitHub owner.
           </p>
         </div>
         <span className="text-[10px] uppercase text-neutral-500">
@@ -330,7 +331,8 @@ function VercelForm({
         >
           vercel.com/account/tokens
         </a>
-        . The token is sent to the API once and not persisted.
+        . The token is sent to the API and saved only when owner auth plus
+        Vercel KV are configured.
       </p>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <input

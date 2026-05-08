@@ -86,8 +86,8 @@ Set these on the **API** Vercel project:
 | `GITHUB_TOKEN` | Required for PR creation | GitHub PAT used for higher rate limits and `/api/actions/create-pr`. |
 | `GITHUB_WRITE_OWNER` | Required when `GITHUB_TOKEN` is set | Safety guardrail. PR creation is restricted to repos owned by this GitHub username. |
 | `CORS_ORIGINS` | Recommended | JSON list of allowed web origins, for example `["http://localhost:3000","https://ai-portfolio-agent.vercel.app"]`. |
-| `KV_REST_API_URL` | Optional | Vercel KV / Upstash REST URL. Auto-created when KV is attached to the API project. |
-| `KV_REST_API_TOKEN` | Optional | Vercel KV / Upstash REST token. Auto-created with `KV_REST_API_URL`. |
+| `KV_REST_API_URL` | Required for persistence | Vercel KV / Upstash Redis REST URL. Add this only to the API project. |
+| `KV_REST_API_TOKEN` | Required for persistence | Vercel KV / Upstash Redis REST token. Add this only to the API project. |
 | `CLERK_SECRET_KEY` | Required for saved owner writes | Clerk server key used by the API to fetch the signed-in user's GitHub account. |
 | `CLERK_JWKS_URL` | Required for saved owner writes | Clerk JWKS URL used by the API to verify session JWTs from the web app. |
 
@@ -143,6 +143,8 @@ app checks that the Clerk GitHub username matches `/github-username`.
 1. Create a Clerk application at <https://clerk.com>.
 2. In Clerk, enable **Authentication -> Social Connections -> GitHub**.
 3. For production, add your deployed web domain in Clerk Domains / allowed URLs.
+   The web UI starts GitHub OAuth through Clerk and returns through
+   `/sso-callback`.
 4. Copy the publishable key and secret key.
 5. On `ai-portfolio-agent` (`web/`), set:
    - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
@@ -163,12 +165,42 @@ After changing Clerk variables, redeploy both Vercel projects.
 ### Vercel KV
 
 KV persists resume text and per-user Vercel tokens after the owner saves them.
+Attach this storage only to `ai-portfolio-agent-api`; the web project does not
+read KV credentials.
 
-1. Open the `ai-portfolio-agent-api` project in Vercel.
-2. Create or attach a Vercel KV database.
-3. Confirm Vercel added `KV_REST_API_URL` and `KV_REST_API_TOKEN` to the API
-   project.
-4. Redeploy `ai-portfolio-agent-api`.
+Vercel's old first-party KV product is now handled through Marketplace Redis
+providers, usually **Upstash for Redis**. The app still expects the Vercel KV
+environment variable names: `KV_REST_API_URL` and `KV_REST_API_TOKEN`.
+
+1. Open the Vercel dashboard.
+2. Open the `ai-portfolio-agent-api` project.
+3. Go to **Storage**. If you do not see a storage creation flow there, go to
+   **Integrations -> Browse Marketplace**.
+4. Select **Upstash for Redis**.
+5. Click **Install**.
+6. Create a new Redis database, or select an existing Upstash Redis database.
+7. When Vercel asks which project to connect, select
+   `ai-portfolio-agent-api`.
+8. Do not set a custom environment variable prefix. A prefix would change the
+   variable names and the API would not find them.
+9. Open `ai-portfolio-agent-api -> Settings -> Environment Variables`.
+10. Confirm these variables exist for Production, and ideally Preview:
+    - `KV_REST_API_URL`
+    - `KV_REST_API_TOKEN`
+11. Redeploy `ai-portfolio-agent-api`.
+
+If the integration creates `UPSTASH_REDIS_REST_URL` and
+`UPSTASH_REDIS_REST_TOKEN` instead, add API-project aliases manually:
+
+```text
+KV_REST_API_URL=<same value as UPSTASH_REDIS_REST_URL>
+KV_REST_API_TOKEN=<same value as UPSTASH_REDIS_REST_TOKEN>
+```
+
+Do not add these variables to `ai-portfolio-agent`; they are server-only API
+secrets. Vercel applies environment-variable changes only to new deployments, so
+redeploying the API is required after the database is attached or aliases are
+added.
 
 The app still works without KV, but owner source updates apply only to the
 current rebuild response.

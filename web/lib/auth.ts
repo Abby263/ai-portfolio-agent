@@ -18,7 +18,7 @@ export async function getSignedInGitHubUsername(): Promise<string | null> {
     const user = await currentUser();
     if (!user) return null;
     const gh = user.externalAccounts?.find(
-      (a) => a.provider === "oauth_github",
+      (a) => a.provider === "github",
     );
     return gh?.username?.toLowerCase() ?? null;
   } catch {
