@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { CommandBar } from "@/components/CommandBar";
 import { EducationList } from "@/components/EducationList";
 import { ExperienceList } from "@/components/ExperienceList";
 import { ProfileHero } from "@/components/ProfileHero";
@@ -22,8 +23,12 @@ export function ProfileView({ initial }: { initial: Profile }) {
         </p>
       ) : null}
 
-      <div className="mt-6">
+      <div className="mt-6 flex flex-wrap items-center gap-2">
         <ResumeEnhancer initial={profile} onUpdate={setProfile} />
+      </div>
+
+      <div className="mt-8">
+        <CommandBar profile={profile} />
       </div>
 
       {profile.themes.length > 0 ? (
