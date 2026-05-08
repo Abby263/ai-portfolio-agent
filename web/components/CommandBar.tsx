@@ -49,8 +49,8 @@ export function CommandBar({
   }
 
   return (
-    <section className="rounded-xl border border-[var(--border)] bg-[var(--muted)] p-4">
-      <div className="mb-3 flex items-center gap-2 text-xs uppercase tracking-widest text-neutral-500">
+    <section className="rounded-lg border border-[var(--border)] bg-[var(--muted)] p-4">
+      <div className="mb-3 flex items-center gap-2 text-xs uppercase text-neutral-500">
         <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
         Ask my portfolio
       </div>
@@ -65,7 +65,7 @@ export function CommandBar({
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Ask anything about this profile, or give an instruction…"
+          placeholder="Ask anything about this profile, or give an instruction..."
           className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm outline-none placeholder:text-neutral-500 focus:border-[var(--accent-soft)]"
         />
         <button
@@ -73,7 +73,7 @@ export function CommandBar({
           disabled={pending || text.trim().length === 0}
           className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {pending ? "…" : "Ask"}
+          {pending ? "..." : "Ask"}
         </button>
       </form>
 

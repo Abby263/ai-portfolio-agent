@@ -85,20 +85,67 @@ export async function buildProfile(
   username: string,
   input: BuildProfileInput = {},
 ): Promise<Profile> {
+  const body: Record<string, string> = {};
+  if (input.resumeText) body.resume_text = input.resumeText;
+  if (input.vercelToken) body.vercel_token = input.vercelToken;
+
   const res = await fetch(`${API_URL}/api/profile/${username}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       ...authHeaders(input.authToken),
     },
-    body: JSON.stringify({
-      resume_text: input.resumeText ?? null,
-      vercel_token: input.vercelToken ?? null,
-    }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     const detail = await res.text();
     throw new Error(`Failed to build profile (${res.status}): ${detail}`);
+  }
+  return res.json();
+}
+
+export type UploadResumeInput = {
+  file: File;
+  authToken?: string | null;
+};
+
+function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const value = String(reader.result ?? "");
+      const [, base64] = value.split(",", 2);
+      if (!base64) {
+        reject(new Error("Could not read resume file"));
+        return;
+      }
+      resolve(base64);
+    };
+    reader.onerror = () => reject(new Error("Could not read resume file"));
+    reader.readAsDataURL(file);
+  });
+}
+
+export async function uploadResume(
+  username: string,
+  input: UploadResumeInput,
+): Promise<Profile> {
+  const dataBase64 = await readFileAsBase64(input.file);
+  const res = await fetch(`${API_URL}/api/profile/${username}/resume`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(input.authToken),
+    },
+    body: JSON.stringify({
+      filename: input.file.name,
+      content_type: input.file.type || null,
+      data_base64: dataBase64,
+    }),
+  });
+  if (!res.ok) {
+    const detail = await res.text();
+    throw new Error(`Failed to upload resume (${res.status}): ${detail}`);
   }
   return res.json();
 }

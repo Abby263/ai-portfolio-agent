@@ -9,6 +9,11 @@ import { ProfileView } from "./profile-view";
 
 export const dynamic = "force-dynamic";
 
+const CLERK_PUBLISHABLE_CONFIGURED = Boolean(
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+);
+const CLERK_SERVER_CONFIGURED = Boolean(process.env.CLERK_SECRET_KEY);
+
 export default async function ProfilePage({
   params,
   searchParams,
@@ -47,7 +52,16 @@ export default async function ProfilePage({
         </div>
       </header>
 
-      <ProfileView initial={profile} isEditMode={isEditMode} />
+      <ProfileView
+        initial={profile}
+        isEditMode={isEditMode}
+        authState={{
+          clerkReady: CLERK_ENABLED,
+          publishableConfigured: CLERK_PUBLISHABLE_CONFIGURED,
+          serverConfigured: CLERK_SERVER_CONFIGURED,
+          signedInGitHubUsername: owner,
+        }}
+      />
     </main>
   );
 }

@@ -23,16 +23,16 @@ export function StatsStrip({ profile }: { profile: Profile }) {
   ];
 
   return (
-    <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--border)] sm:grid-cols-4">
+    <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--border)] sm:grid-cols-4">
       {items.map((item) => (
         <div
           key={item.label}
           className="bg-[var(--muted)] px-5 py-4 transition hover:bg-[var(--background)]"
         >
-          <dt className="text-[10px] uppercase tracking-widest text-neutral-500">
+          <dt className="text-[10px] uppercase text-neutral-500">
             {item.label}
           </dt>
-          <dd className="mt-1 bg-gradient-to-br from-neutral-50 to-neutral-400 bg-clip-text font-mono text-2xl font-semibold tracking-tight text-transparent">
+          <dd className="mt-1 bg-gradient-to-br from-neutral-50 to-neutral-400 bg-clip-text font-mono text-2xl font-semibold text-transparent">
             {item.value}
           </dd>
         </div>

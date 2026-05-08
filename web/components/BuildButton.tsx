@@ -4,7 +4,7 @@ import { useFormStatus } from "react-dom";
 
 export function BuildButton({
   label = "Build",
-  pendingLabel = "Building…",
+  pendingLabel = "Building...",
 }: {
   label?: string;
   pendingLabel?: string;

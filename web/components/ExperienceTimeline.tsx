@@ -30,7 +30,7 @@ export function ExperienceTimeline({ items }: { items: Experience[] }) {
             {e.start || e.end ? (
               <span className="font-mono text-xs text-neutral-500">
                 {e.start ?? ""}
-                {e.start || e.end ? " — " : ""}
+                {e.start || e.end ? " - " : ""}
                 {e.end ?? "present"}
               </span>
             ) : null}

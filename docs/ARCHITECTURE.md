@@ -52,7 +52,7 @@ Read-only agents are safe to run autonomously. Write-side agents (README Update,
 Build one slice end-to-end, then fan out.
 
 1. **Slice 1 — GitHub → Profile (current).** Public GitHub username → repos + READMEs → Profile Builder → JSON profile served at `/api/profile/{username}` → Next.js renders.
-2. **Slice 2 — Resume.** Upload PDF/Markdown → Resume Parser → merged into profile.
+2. **Slice 2 — Resume.** Upload PDF/DOCX/Markdown/plain text → Resume Parser → merged into profile.
 3. **Slice 3 — Vercel.** OAuth → Vercel Agent → match deployments to repos → enrich projects.
 4. **Slice 4 — Storytelling.** Run Storytelling Agent over the merged profile → narrative + project summaries.
 5. **Slice 5 — Command bar.** Free-form commands routed through the Orchestrator.
@@ -87,6 +87,12 @@ Optional API env vars:
 - `GITHUB_TOKEN` — required for write-side actions (`POST /api/actions/create-pr`). Read-only endpoints work without it.
 - `GITHUB_WRITE_OWNER` — locks PR creation to a single GitHub username. Required when a shared token is in use.
 - `CORS_ORIGINS` — JSON list of allowed browser origins.
+- `KV_REST_API_URL` / `KV_REST_API_TOKEN` — persist owner customizations.
+- `CLERK_SECRET_KEY` / `CLERK_JWKS_URL` — verify owner writes from Clerk sessions.
+
+The web project separately needs `NEXT_PUBLIC_API_URL`,
+`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, and `CLERK_SECRET_KEY`. Clerk keys placed
+only on the API project cannot render GitHub sign-in in the browser.
 
 ## Why direct REST instead of MCP
 
@@ -100,10 +106,7 @@ MCP is still interesting in the *other direction*: exposing this product **as** 
 
 ## Deferred decisions
 
-- Auth (likely Clerk or Auth.js once we add user accounts).
 - Multi-tenancy & background workers (Celery / Arq) once syncs get heavy.
 - Diagram generation strategy (Mermaid vs. Excalidraw vs. AI-rendered).
 - Per-user OAuth tokens for write-side actions (replaces the shared `GITHUB_TOKEN` model).
-- Clerk + GitHub OAuth so the profile owner is identified by their GitHub username and can edit their own profile in place.
-- A persistence layer (Vercel KV or Postgres) so owner customizations survive across requests.
 - Exposing this product **as** an MCP server so AI assistants can interact with the portfolio.
