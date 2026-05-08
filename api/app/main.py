@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .routes import actions, command, health, profile
 
-app = FastAPI(title="AI Portfolio Agent API", version="0.1.0")
+app = FastAPI(title="AI Developer Portfolio Manager Agent API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,

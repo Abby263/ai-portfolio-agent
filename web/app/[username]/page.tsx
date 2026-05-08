@@ -49,7 +49,7 @@ export default async function ProfilePage({
               href="/"
               className="font-medium text-[var(--accent-soft)] underline-offset-2 hover:underline"
             >
-              AI Portfolio Agent
+              AI Developer Portfolio Manager Agent
             </Link>
             <span className="hidden sm:inline">
               {" "}— create your own from your connected GitHub profile
@@ -76,7 +76,7 @@ export default async function ProfilePage({
             className="inline-flex items-center gap-2 text-xs text-neutral-500 transition hover:text-[var(--accent-soft)]"
           >
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
-            AI Portfolio Agent
+            AI Developer Portfolio Manager Agent
           </Link>
           <div className="flex items-center gap-3">
             <span className="font-mono text-xs text-neutral-600">
