@@ -71,9 +71,26 @@ Provenance matters because the agent will rewrite content; we need to know what 
 
 For now: a single vector store (Chroma in dev, pgvector in prod) keyed by `(user_id, source_type, source_id)`. Each connector pushes documents on sync; agents retrieve with metadata filters.
 
+## Deployment
+
+The repo deploys as **two Vercel projects** sharing one GitHub repo:
+
+| Project | Vercel root directory | Notes |
+|---------|-----------------------|-------|
+| `web`   | `web`                 | Next.js, autodetected. Needs `NEXT_PUBLIC_API_URL` env. |
+| `api`   | `api`                 | FastAPI on `@vercel/python`, configured via `api/vercel.json`. |
+
+Both projects are connected to GitHub for auto-deploy on `main` and previews on PRs. `rootDirectory` must be set on each project; otherwise Vercel walks the repo root and the paths in `api/vercel.json` do not resolve.
+
+Optional API env vars:
+- `OPENAI_API_KEY` — enables LLM modes for Storytelling, Resume Parser, Command Router, README Writer. Each agent has a deterministic fallback when unset.
+- `GITHUB_TOKEN` — required for write-side actions (`POST /api/actions/create-pr`). Read-only endpoints work without it.
+- `GITHUB_WRITE_OWNER` — locks PR creation to a single GitHub username. Required when a shared token is in use.
+- `CORS_ORIGINS` — JSON list of allowed browser origins.
+
 ## Deferred decisions
 
 - Auth (likely Clerk or Auth.js once we add user accounts).
 - Multi-tenancy & background workers (Celery / Arq) once syncs get heavy.
 - Diagram generation strategy (Mermaid vs. Excalidraw vs. AI-rendered).
-- Hosting (Vercel for `web/`, Fly/Render for `api/` is the likely default).
+- Per-user OAuth tokens for write-side actions (replaces the shared `GITHUB_TOKEN` model).
