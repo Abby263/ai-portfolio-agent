@@ -6,9 +6,15 @@
 
 `ai-portfolio-agent` is an AI-powered developer portfolio and project control platform.
 
-It connects with apps like GitHub, Vercel, LinkedIn, Instagram, uploaded resumes, blogs, and project documents to automatically build a rich developer profile. The platform understands a developer's work, creates a professional storyline, generates project summaries, and keeps the portfolio updated as new projects are added.
+The current product builds a rich developer profile from GitHub repos, GitHub
+repo homepage links, and owner-uploaded resumes. It understands a developer's
+work, creates a professional storyline, generates project summaries, and keeps
+the portfolio updated as new projects are added.
 
-Beyond showcasing work, it acts as an agentic command center. Developers can ask the agent to perform actions such as updating README files across repositories, generating case studies for deployed projects, creating pull requests, improving portfolio content, and validating deployment updates.
+Beyond showcasing work, it acts as an agentic command center. Developers can
+ask the agent to perform actions such as updating README files across
+repositories, generating case studies for published projects, creating pull
+requests, and improving portfolio content.
 
 The backend uses **LangGraph**-based AI agents to retrieve, reason, generate, and act across the developer's connected ecosystem.
 
@@ -17,6 +23,7 @@ The backend uses **LangGraph**-based AI agents to retrieve, reason, generate, an
 ## Features
 
 - **Profile from GitHub** — repos, languages, topics, stars merged into a structured profile.
+- **Project live links from GitHub** — deployed URLs come from each repo's GitHub homepage field; no per-user Vercel token is needed in the UI.
 - **Resume parser** — upload PDF, DOCX, Markdown, or plain text; experience, education, and skills are extracted and merged with provenance.
 - **Storytelling agent** — generates a tagline, narrative, recurring themes, and per-project highlights from the merged profile.
 - **Conversational command bar** — "Ask my portfolio" UI plus a `POST /api/command` endpoint with structured suggested actions.

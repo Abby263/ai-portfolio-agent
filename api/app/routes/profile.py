@@ -24,11 +24,6 @@ MAX_RESUME_TEXT_CHARS = 200_000
 
 class BuildProfileRequest(BaseModel):
     resume_text: str | None = Field(default=None, max_length=200_000)
-    vercel_token: str | None = Field(
-        default=None,
-        max_length=200,
-        description="Per-user Vercel access token. Saved (encrypted at rest by KV) when the request is owner-authenticated; otherwise used in-session only.",
-    )
 
 
 class UploadResumeRequest(BaseModel):
@@ -46,8 +41,6 @@ def _incoming_patch(body: BuildProfileRequest) -> dict[str, str]:
     patch: dict[str, str] = {}
     if "resume_text" in body.model_fields_set and body.resume_text:
         patch["resume_text"] = body.resume_text
-    if "vercel_token" in body.model_fields_set and body.vercel_token:
-        patch["vercel_token"] = body.vercel_token
     return patch
 
 
@@ -87,7 +80,6 @@ async def _build_with_customization_patch(
         return await build_profile(
             username,
             resume_text=customizations.get("resume_text"),
-            vercel_token=customizations.get("vercel_token"),
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -181,7 +173,6 @@ async def get_profile(username: str) -> Profile:
         return await build_profile(
             username,
             resume_text=customizations.get("resume_text"),
-            vercel_token=customizations.get("vercel_token"),
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

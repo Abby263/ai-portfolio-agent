@@ -8,7 +8,7 @@ import { buildProfile, type Profile, uploadResume } from "@/lib/api";
 
 const CLERK_ENABLED = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
-type Row = "resume" | "vercel" | null;
+type Row = "resume" | null;
 type GetToken = () => Promise<string | null>;
 
 export function Sources({
@@ -52,17 +52,15 @@ function SourcesInner({
 }) {
   const [resumeText, setResumeText] = useState("");
   const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [vercelToken, setVercelToken] = useState("");
   const [openRow, setOpenRow] = useState<Row>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const resumeConnected =
     profile.experiences.length > 0 || profile.resume_summary !== null;
-  const deployedProjects = profile.projects.filter(
-    (p) => p.deployment_url !== null,
+  const liveProjects = profile.projects.filter(
+    (p) => p.deployment_url !== null || p.homepage !== null,
   );
-  const vercelConnected = deployedProjects.length > 0;
 
   function applyResume() {
     setError(null);
@@ -81,24 +79,6 @@ function SourcesInner({
         setOpenRow(null);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to apply resume");
-      }
-    });
-  }
-
-  function connectVercel() {
-    setError(null);
-    startTransition(async () => {
-      try {
-        const authToken = await getToken();
-        const next = await buildProfile(profile.username, {
-          vercelToken: vercelToken.trim(),
-          authToken,
-        });
-        onUpdate(next);
-        setVercelToken("");
-        setOpenRow(null);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to connect Vercel");
       }
     });
   }
@@ -123,7 +103,7 @@ function SourcesInner({
       <div className="divide-y divide-[var(--border)] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--background)]">
         <Row
           name="GitHub"
-          detail={`@${profile.username} - ${profile.projects.length} repos`}
+          detail={`@${profile.username} - ${profile.projects.length} repos - ${liveProjects.length} live links`}
           connected
         />
 
@@ -148,28 +128,6 @@ function SourcesInner({
             setFile={setResumeFile}
             pending={pending}
             onSubmit={applyResume}
-          />
-        </Row>
-
-        <Row
-          name="Vercel"
-          detail={
-            vercelConnected
-              ? `${deployedProjects.length} deployments matched to repos`
-              : "Connect to surface live demo URLs on each project."
-          }
-          connected={vercelConnected}
-          open={openRow === "vercel"}
-          actionLabel={vercelConnected ? "Update token" : "Connect Vercel"}
-          onToggle={() =>
-            setOpenRow(openRow === "vercel" ? null : "vercel")
-          }
-        >
-          <VercelForm
-            token={vercelToken}
-            setToken={setVercelToken}
-            pending={pending}
-            onSubmit={connectVercel}
           />
         </Row>
       </div>
@@ -302,52 +260,6 @@ function ResumeForm({
           className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pending ? "Parsing..." : "Apply resume"}
-        </button>
-      </div>
-    </>
-  );
-}
-
-function VercelForm({
-  token,
-  setToken,
-  pending,
-  onSubmit,
-}: {
-  token: string;
-  setToken: (v: string) => void;
-  pending: boolean;
-  onSubmit: () => void;
-}) {
-  return (
-    <>
-      <p className="mb-2 text-xs text-neutral-500">
-        Create a token at{" "}
-        <a
-          href="https://vercel.com/account/tokens"
-          target="_blank"
-          rel="noreferrer"
-          className="underline transition hover:text-[var(--accent-soft)]"
-        >
-          vercel.com/account/tokens
-        </a>
-        . The token is sent to the API and saved only when owner auth plus
-        Vercel KV are configured.
-      </p>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <input
-          type="password"
-          value={token}
-          onChange={(e) => setToken(e.target.value)}
-          placeholder="vercel_xxxxxxxxxxxxxxxxxxxxxxxx"
-          className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 font-mono text-xs text-neutral-200 outline-none placeholder:text-neutral-600 focus:border-[var(--accent-soft)]"
-        />
-        <button
-          onClick={onSubmit}
-          disabled={pending || token.trim().length < 12}
-          className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {pending ? "Connecting..." : "Connect"}
         </button>
       </div>
     </>

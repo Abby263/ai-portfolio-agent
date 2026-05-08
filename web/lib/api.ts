@@ -73,7 +73,6 @@ export async function fetchProfile(username: string): Promise<Profile | null> {
 
 export type BuildProfileInput = {
   resumeText?: string | null;
-  vercelToken?: string | null;
   authToken?: string | null;
 };
 
@@ -87,7 +86,6 @@ export async function buildProfile(
 ): Promise<Profile> {
   const body: Record<string, string> = {};
   if (input.resumeText) body.resume_text = input.resumeText;
-  if (input.vercelToken) body.vercel_token = input.vercelToken;
 
   const res = await fetch(`${API_URL}/api/profile/${username}`, {
     method: "POST",

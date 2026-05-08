@@ -1,7 +1,10 @@
 import type { Project } from "@/lib/api";
 
 export function ProjectCard({ project }: { project: Project }) {
-  const primaryHref = project.deployment_url ?? project.repo_url ?? "#";
+  const liveHref = project.deployment_url ?? project.homepage;
+  const primaryHref = liveHref ?? project.repo_url ?? "#";
+  const liveLabel = project.deployment_target ?? "GitHub homepage";
+
   return (
     <div className="group flex h-full flex-col rounded-lg border border-[var(--border)] bg-[var(--muted)] p-5 transition hover:border-[var(--accent-soft)]">
       <div className="flex items-start justify-between gap-2">
@@ -32,15 +35,15 @@ export function ProjectCard({ project }: { project: Project }) {
         </ul>
       ) : null}
       <div className="mt-auto pt-4">
-        {project.deployment_url ? (
+        {liveHref ? (
           <a
-            href={project.deployment_url}
+            href={liveHref}
             target="_blank"
             rel="noreferrer"
             className="mb-2 inline-flex items-center gap-1.5 rounded-md border border-emerald-700/40 bg-emerald-900/10 px-2 py-1 text-[11px] text-emerald-300 transition hover:bg-emerald-900/20"
           >
             <span className="h-1 w-1 rounded-full bg-emerald-400" />
-            Live - {project.deployment_target ?? "preview"}
+            Live - {liveLabel}
           </a>
         ) : null}
         <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500">

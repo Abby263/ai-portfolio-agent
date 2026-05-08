@@ -73,8 +73,9 @@ Set these on the **web** Vercel project:
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Required for sign-in | Clerk publishable key. This is what makes the GitHub sign-in button render in the web UI. |
 | `CLERK_SECRET_KEY` | Required for edit mode | Clerk server key used by Next.js server components to identify the signed-in GitHub user. |
 
-Do not put `OPENAI_API_KEY`, `GITHUB_TOKEN`, KV tokens, or a Vercel access token
-on the web project.
+Do not put `OPENAI_API_KEY`, `GITHUB_TOKEN`, or KV tokens on the web project.
+No Vercel access token is required in the browser; live project URLs come from
+GitHub repo homepage links.
 
 ### `ai-portfolio-agent-api` (`api/`)
 
@@ -91,16 +92,15 @@ Set these on the **API** Vercel project:
 | `CLERK_SECRET_KEY` | Required for saved owner writes | Clerk server key used by the API to fetch the signed-in user's GitHub account. |
 | `CLERK_JWKS_URL` | Required for saved owner writes | Clerk JWKS URL used by the API to verify session JWTs from the web app. |
 
-Do not set `NEXT_PUBLIC_API_URL` on the API project. Do not set a server-wide
-`VERCEL_TOKEN`; each owner enters their own Vercel access token in the profile
-UI.
+Do not set `NEXT_PUBLIC_API_URL` on the API project. No Vercel token is needed
+for source connections; add each deployed URL as the GitHub repository homepage
+so the profile can pick it up from GitHub metadata.
 
-### Per-user UI secrets
+### Per-user UI inputs
 
-| Secret | Where it is entered | What it unlocks |
+| Input | Where it is entered | What it unlocks |
 |---|---|---|
 | Resume file | Profile page -> Owner tools -> Resume | Upload PDF, DOCX, Markdown, or text. The parser extracts skills, experience, education, and summary. |
-| Vercel access token | Profile page -> Owner tools -> Vercel | Lists that user's deployments and matches live URLs to GitHub repos. |
 
 The API saves owner customizations only when all of these are true:
 
@@ -164,7 +164,7 @@ After changing Clerk variables, redeploy both Vercel projects.
 
 ### Vercel KV
 
-KV persists resume text and per-user Vercel tokens after the owner saves them.
+KV persists resume text and owner customizations after the owner saves them.
 Attach this storage only to `ai-portfolio-agent-api`; the web project does not
 read KV credentials.
 
@@ -204,14 +204,6 @@ added.
 
 The app still works without KV, but owner source updates apply only to the
 current rebuild response.
-
-### Vercel Access Token
-
-This is not a Vercel project environment variable.
-
-Each profile owner creates their own token at <https://vercel.com/account/tokens>
-and enters it in the profile page's Vercel source row. The token is sent to the
-API for that request and is saved only when owner auth plus KV are configured.
 
 ---
 
@@ -283,7 +275,7 @@ Check that:
 - The signed-in Clerk user's GitHub username matches the URL username exactly,
   case-insensitive.
 
-### Resume or Vercel updates do not persist
+### Resume updates do not persist
 
 Check that `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `CLERK_SECRET_KEY`, and
 `CLERK_JWKS_URL` exist on `ai-portfolio-agent-api`, then redeploy the API.

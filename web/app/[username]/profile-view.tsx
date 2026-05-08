@@ -34,6 +34,9 @@ export function ProfileView({
   const [activeAction, setActiveAction] = useState<SuggestedAction | null>(
     null,
   );
+  const liveProjects = profile.projects.filter(
+    (project) => project.deployment_url || project.homepage,
+  ).length;
 
   function handleAction(action: SuggestedAction) {
     if (!isEditMode) {
@@ -140,8 +143,7 @@ export function ProfileView({
               Projects
             </h2>
             <span className="text-xs text-neutral-600">
-              {profile.projects.filter((p) => p.deployment_url).length} live -{" "}
-              {profile.projects.length} total
+              {liveProjects} live - {profile.projects.length} total
             </span>
           </div>
           <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -209,7 +211,7 @@ function OwnerToolsPanel({
 
   let title = "Owner tools";
   let detail =
-    "Sign in with GitHub as this profile owner to upload a resume, connect Vercel deployments, and run write-side actions.";
+    "Sign in with GitHub as this profile owner to upload a resume and run write-side actions. Project live links come from GitHub repo homepage metadata.";
 
   if (!authState.clerkReady) {
     title = "Owner tools need Clerk on the web project";
