@@ -10,14 +10,19 @@ from typing import Any
 import httpx
 
 from .config import settings
+from .models.profile import Profile
 
 
 def kv_enabled() -> bool:
     return bool(settings.kv_rest_api_url and settings.kv_rest_api_token)
 
 
-def _key(username: str) -> str:
+def _customizations_key(username: str) -> str:
     return f"customizations:{username.lower()}"
+
+
+def _profile_key(username: str) -> str:
+    return f"profile:{username.lower()}"
 
 
 async def _kv_get(key: str) -> str | None:
@@ -48,7 +53,7 @@ async def _kv_set(key: str, value: str) -> None:
 
 async def get_customizations(username: str) -> dict[str, Any]:
     """Returns the saved customizations for a user, or {} if none / KV off."""
-    raw = await _kv_get(_key(username))
+    raw = await _kv_get(_customizations_key(username))
     if not raw:
         return {}
     try:
@@ -72,5 +77,23 @@ async def save_customizations(
             merged.pop(k, None)
         else:
             merged[k] = v
-    await _kv_set(_key(username), json.dumps(merged))
+    await _kv_set(_customizations_key(username), json.dumps(merged))
     return merged
+
+
+async def get_profile_cache(username: str) -> Profile | None:
+    """Returns the generated public profile snapshot, or None if absent."""
+    raw = await _kv_get(_profile_key(username))
+    if not raw:
+        return None
+    try:
+        return Profile.model_validate_json(raw)
+    except Exception:
+        return None
+
+
+async def save_profile_cache(username: str, profile: Profile) -> None:
+    """Persists the generated public profile snapshot for fast subsequent loads."""
+    if not kv_enabled():
+        return
+    await _kv_set(_profile_key(username), profile.model_dump_json())

@@ -6,7 +6,12 @@ import { useEffect, useState, useTransition } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 
 import { ClerkGitHubSignInButton } from "@/components/AuthBadge";
-import { fetchProfile, type Profile, uploadResume } from "@/lib/api";
+import {
+  buildProfile,
+  fetchProfile,
+  type Profile,
+  uploadResume,
+} from "@/lib/api";
 
 const CLERK_ENABLED = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
@@ -26,9 +31,9 @@ export function PortfolioNavLink({
 }) {
   if (!CLERK_ENABLED) {
     return (
-      <a href="#sources" className={className}>
+      <Link href="/sources" className={className}>
         Portfolio
-      </a>
+      </Link>
     );
   }
   return <PortfolioNavLinkInner className={className} />;
@@ -37,7 +42,7 @@ export function PortfolioNavLink({
 function PortfolioNavLinkInner({ className }: { className?: string }) {
   const { isLoaded, user } = useUser();
   const username = getGitHubUsername(user);
-  const href = isLoaded && username ? `/${username}` : "#sources";
+  const href = isLoaded && username ? `/${username}` : "/sources";
   return (
     <Link href={href} className={className}>
       Portfolio
@@ -70,7 +75,8 @@ function SignedUserSourcesInner() {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [uploadPending, startUploadTransition] = useTransition();
+  const [refreshPending, startRefreshTransition] = useTransition();
 
   useEffect(() => {
     if (!username) {
@@ -106,7 +112,7 @@ function SignedUserSourcesInner() {
     if (!username || !resumeFile) return;
     setError(null);
     setSuccess(null);
-    startTransition(async () => {
+    startUploadTransition(async () => {
       try {
         const authToken = await getToken();
         const next = await uploadResume(username, {
@@ -118,6 +124,24 @@ function SignedUserSourcesInner() {
         setSuccess("Resume uploaded and merged into your portfolio.");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Resume upload failed");
+      }
+    });
+  }
+
+  function updatePortfolio() {
+    if (!username) return;
+    setError(null);
+    setSuccess(null);
+    startRefreshTransition(async () => {
+      try {
+        const authToken = await getToken();
+        const next = await buildProfile(username, { authToken });
+        setProfile(next);
+        setSuccess("Portfolio regenerated and saved.");
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Portfolio update failed",
+        );
       }
     });
   }
@@ -204,7 +228,7 @@ function SignedUserSourcesInner() {
         ? `${profile?.experiences.length ?? 0} roles and ${
             profile?.education.length ?? 0
           } education entries connected`
-        : "Upload a resume PDF here to enrich your profile.",
+        : "Upload a resume file here to enrich your profile.",
     },
   ];
 
@@ -219,21 +243,21 @@ function SignedUserSourcesInner() {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-sm font-medium text-neutral-100">
-              Upload resume PDF
+              Upload resume
             </p>
             <p className="mt-1 text-sm leading-6 text-neutral-400">
-              The PDF is parsed by the API and merged into @{username}'s saved
-              source profile when owner auth and KV are configured.
+              The file is parsed by the API and merged into @{username}'s saved
+              portfolio sources when owner auth and KV are configured.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <label htmlFor="landing-resume-upload" className="sr-only">
-              Resume PDF
+              Resume file
             </label>
             <input
               id="landing-resume-upload"
               type="file"
-              accept=".pdf,application/pdf"
+              accept=".pdf,.docx,.md,.markdown,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/markdown,text/plain"
               onChange={(event) =>
                 setResumeFile(event.target.files?.[0] ?? null)
               }
@@ -242,10 +266,10 @@ function SignedUserSourcesInner() {
             <button
               type="button"
               onClick={submitResume}
-              disabled={pending || !resumeFile}
+              disabled={uploadPending || !resumeFile}
               className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {pending ? "Uploading..." : "Upload"}
+              {uploadPending ? "Uploading..." : "Upload"}
             </button>
           </div>
         </div>
@@ -264,12 +288,22 @@ function SignedUserSourcesInner() {
           : "Profile source records are still loading."}
       </p>
       <div className="mt-4">
-        <Link
-          href={`/${username}`}
-          className="inline-flex rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-soft)]"
-        >
-          Open portfolio
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/${username}`}
+            className="inline-flex rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-soft)]"
+          >
+            Open portfolio
+          </Link>
+          <button
+            type="button"
+            onClick={updatePortfolio}
+            disabled={refreshPending}
+            className="rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-1.5 text-xs font-medium text-neutral-300 transition hover:border-[var(--accent-soft)] hover:text-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {refreshPending ? "Updating..." : "Update portfolio"}
+          </button>
+        </div>
       </div>
       {error ? <p className="mt-3 text-xs text-red-400">{error}</p> : null}
     </PanelShell>

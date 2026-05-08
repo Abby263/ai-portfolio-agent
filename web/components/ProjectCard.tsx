@@ -68,7 +68,7 @@ export function ProjectCard({ project }: { project: Project }) {
                 rel="noreferrer"
                 className="rounded-md border border-[var(--border)] px-2 py-0.5 transition hover:text-[var(--accent-soft)]"
               >
-                Source code
+                Github Repo
               </a>
             ) : null}
             {project.language ? (

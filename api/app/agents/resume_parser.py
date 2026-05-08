@@ -8,16 +8,50 @@ from ..config import settings
 from ..models.profile import Education, Experience, Resume, Source
 
 SECTION_HEADERS = {
-    "summary": ["summary", "profile", "objective", "about"],
+    "summary": [
+        "summary",
+        "professional summary",
+        "profile",
+        "objective",
+        "about",
+        "about me",
+    ],
     "skills": ["skills", "technical skills", "technologies", "tech stack"],
     "experience": [
         "experience",
         "work experience",
         "employment",
         "professional experience",
+        "professional background",
+        "work history",
+        "career history",
+        "employment history",
     ],
-    "education": ["education", "academic", "qualifications"],
+    "education": ["education", "academic", "qualifications", "academics"],
 }
+
+ROLE_WORDS = {
+    "architect",
+    "consultant",
+    "developer",
+    "engineer",
+    "founder",
+    "intern",
+    "lead",
+    "manager",
+    "scientist",
+    "specialist",
+    "analyst",
+    "director",
+    "owner",
+}
+
+DATE_RE = re.compile(
+    r"\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|"
+    r"january|february|march|april|june|july|august|september|october|"
+    r"november|december|\d{4}|present|current)\b",
+    re.IGNORECASE,
+)
 
 
 class _ParsedResume(BaseModel):
@@ -71,9 +105,21 @@ def _split_sections(text: str) -> dict[str, str]:
     sections[current] = []
     for raw in lines:
         line = raw.strip()
-        lower = line.lower().rstrip(":")
+        lower = re.sub(r"\s+", " ", line.lower().strip(" :-|"))
         matched = next(
-            (k for k, aliases in SECTION_HEADERS.items() if lower in aliases),
+            (
+                k
+                for k, aliases in SECTION_HEADERS.items()
+                if lower in aliases
+                or (
+                    len(lower) <= 60
+                    and any(
+                        lower.startswith(f"{alias} ")
+                        or lower.endswith(f" {alias}")
+                        for alias in aliases
+                    )
+                )
+            ),
             None,
         )
         if matched:
@@ -82,6 +128,135 @@ def _split_sections(text: str) -> dict[str, str]:
         else:
             sections[current].append(raw)
     return {k: "\n".join(v).strip() for k, v in sections.items() if v}
+
+
+def _looks_like_role(value: str) -> bool:
+    lower = value.lower()
+    return any(word in lower for word in ROLE_WORDS)
+
+
+def _clean_org_line(value: str) -> str:
+    value = re.sub(r"\s+", " ", value).strip()
+    value = re.sub(
+        r"\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)"
+        r"[a-z]*\.?\s+\d{4}\b",
+        "",
+        value,
+        flags=re.IGNORECASE,
+    )
+    value = re.sub(r"\b(?:present|current)\b", "", value, flags=re.IGNORECASE)
+    value = re.sub(r"\b\d{4}\b", "", value)
+    return value.strip(" ,-–—|")
+
+
+def _experience_blocks(exp_text: str) -> list[list[str]]:
+    lines = [line.strip() for line in exp_text.splitlines() if line.strip()]
+    if not lines:
+        return []
+
+    blocks: list[list[str]] = []
+    current: list[str] = []
+    saw_detail = False
+    for line in lines:
+        is_bullet = bool(re.match(r"^[\-\*•·]\s*", line))
+        starts_new_role = (
+            current
+            and saw_detail
+            and not is_bullet
+            and len(line) < 120
+            and (
+                DATE_RE.search(line)
+                or _looks_like_role(line)
+                or len(current) >= 4
+            )
+        )
+        if starts_new_role:
+            blocks.append(current)
+            current = [line]
+            saw_detail = False
+            continue
+
+        current.append(line)
+        if is_bullet or len(line) > 80:
+            saw_detail = True
+
+    if current:
+        blocks.append(current)
+    return blocks
+
+
+def _parse_experience_block(lines: list[str]) -> Experience | None:
+    clean_lines = [line for line in lines if line.strip()]
+    if not clean_lines:
+        return None
+
+    non_bullets = [
+        re.sub(r"^[\-\*•·]\s*", "", line).strip()
+        for line in clean_lines
+        if not re.match(r"^[\-\*•·]\s*", line)
+    ]
+    bullet_lines = [
+        re.sub(r"^[\-\*•·]\s*", "", line).strip()
+        for line in clean_lines
+        if re.match(r"^[\-\*•·]\s*", line)
+    ]
+    if not non_bullets:
+        return None
+
+    first = _clean_org_line(non_bullets[0])
+    second = _clean_org_line(non_bullets[1]) if len(non_bullets) > 1 else ""
+
+    role = ""
+    company = ""
+    if re.search(r"\s+at\s+", first, re.IGNORECASE):
+        role, company = [
+            part.strip()
+            for part in re.split(r"\s+at\s+", first, maxsplit=1, flags=re.IGNORECASE)
+        ]
+    else:
+        parts = [
+            _clean_org_line(part)
+            for part in re.split(r"\s+[—–-]\s+|\s+\|\s+|@", first)
+            if _clean_org_line(part)
+        ]
+        if len(parts) >= 2:
+            if _looks_like_role(parts[0]) and not _looks_like_role(parts[1]):
+                role, company = parts[0], parts[1]
+            else:
+                company, role = parts[0], parts[1]
+        elif second:
+            if _looks_like_role(first) and not _looks_like_role(second):
+                role, company = first, second
+            elif _looks_like_role(second) and not _looks_like_role(first):
+                company, role = first, second
+            else:
+                company, role = first, second
+        else:
+            company = first
+
+    remaining = non_bullets[2:] if second else non_bullets[1:]
+    highlights = [
+        h
+        for h in bullet_lines
+        + [
+            line
+            for line in remaining
+            if len(line) > 30 and not DATE_RE.fullmatch(line)
+        ]
+        if h
+    ]
+    summary = None
+    if not highlights and len(remaining) == 1 and len(remaining[0]) > 30:
+        summary = remaining[0]
+
+    if not company and not role:
+        return None
+    return Experience(
+        company=company,
+        role=role,
+        summary=summary,
+        highlights=highlights[:6],
+    )
 
 
 def _normalize_url(value: str) -> str:
@@ -133,32 +308,32 @@ def _deterministic_parse(text: str) -> _ParsedResume:
     summary = sections.get("summary")
     if summary:
         summary = " ".join(summary.split())[:600]
+    elif sections.get("_preamble"):
+        preamble_lines = [
+            line.strip()
+            for line in sections["_preamble"].splitlines()
+            if line.strip()
+            and "@" not in line
+            and "linkedin.com" not in line.lower()
+            and "github.com" not in line.lower()
+            and not re.search(r"\+?\d[\d\s().-]{7,}\d", line)
+        ]
+        summary_text = " ".join(preamble_lines[1:4] or preamble_lines[:3])
+        summary = summary_text[:600] if len(summary_text) > 80 else None
 
     skills_text = sections.get("skills", "")
     skills_tokens = re.split(r"[,;\n•\-·•|/]+", skills_text)
     skills = [s.strip() for s in skills_tokens if 1 < len(s.strip()) < 40]
     skills = list(dict.fromkeys(skills))[:25]
 
-    experiences: list[Experience] = []
-    exp_text = sections.get("experience", "")
-    for block in re.split(r"\n\s*\n", exp_text):
-        block = block.strip()
-        if not block:
-            continue
-        first_line, *rest = block.splitlines()
-        parts = [p.strip() for p in re.split(r"[—–\-|@,]", first_line) if p.strip()]
-        if not parts:
-            continue
-        company = parts[0]
-        role = parts[1] if len(parts) > 1 else ""
-        highlights = [
-            re.sub(r"^[\-\*•·]\s*", "", line).strip()
-            for line in rest
-            if line.strip() and re.match(r"^\s*[\-\*•·]", line)
-        ]
-        experiences.append(
-            Experience(company=company, role=role or "", highlights=highlights[:5])
+    experiences = [
+        exp
+        for exp in (
+            _parse_experience_block(block)
+            for block in _experience_blocks(sections.get("experience", ""))
         )
+        if exp is not None
+    ]
 
     education: list[Education] = []
     edu_text = sections.get("education", "")
@@ -177,7 +352,11 @@ def _deterministic_parse(text: str) -> _ParsedResume:
             )
 
     return _ParsedResume(
-        summary=summary, skills=skills, experiences=experiences, education=education
+        summary=summary,
+        skills=skills,
+        experiences=experiences[:8],
+        education=education,
+        links=_extract_links(text),
     )
 
 
@@ -186,14 +365,16 @@ def parse_resume(text: str, fetched_at: datetime) -> Resume:
     if not text:
         raise ValueError("Resume text is empty")
 
-    parsed = _llm_parse(text) or _deterministic_parse(text)
-    links = {**parsed.links, **_extract_links(text)}
+    deterministic = _deterministic_parse(text)
+    llm_parsed = _llm_parse(text)
+    parsed = llm_parsed or deterministic
+    links = {**deterministic.links, **parsed.links, **_extract_links(text)}
     digest = hashlib.sha1(text.encode("utf-8")).hexdigest()[:12]
     return Resume(
-        summary=parsed.summary,
-        skills=parsed.skills,
-        experiences=parsed.experiences,
-        education=parsed.education,
+        summary=parsed.summary or deterministic.summary,
+        skills=parsed.skills or deterministic.skills,
+        experiences=parsed.experiences or deterministic.experiences,
+        education=parsed.education or deterministic.education,
         links=links,
         raw_text=text,
         sources=[
