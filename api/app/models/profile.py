@@ -23,6 +23,33 @@ class Project(BaseModel):
     sources: list[Source] = Field(default_factory=list)
 
 
+class Experience(BaseModel):
+    company: str
+    role: str
+    start: str | None = None
+    end: str | None = None
+    location: str | None = None
+    summary: str | None = None
+    highlights: list[str] = Field(default_factory=list)
+
+
+class Education(BaseModel):
+    institution: str
+    degree: str | None = None
+    field: str | None = None
+    start: str | None = None
+    end: str | None = None
+
+
+class Resume(BaseModel):
+    summary: str | None = None
+    skills: list[str] = Field(default_factory=list)
+    experiences: list[Experience] = Field(default_factory=list)
+    education: list[Education] = Field(default_factory=list)
+    raw_text: str
+    sources: list[Source] = Field(default_factory=list)
+
+
 class Profile(BaseModel):
     username: str
     display_name: str | None = None
@@ -33,6 +60,9 @@ class Profile(BaseModel):
     location: str | None = None
     skills: list[str] = Field(default_factory=list)
     projects: list[Project] = Field(default_factory=list)
+    experiences: list[Experience] = Field(default_factory=list)
+    education: list[Education] = Field(default_factory=list)
+    resume_summary: str | None = None
     links: dict[str, str] = Field(default_factory=dict)
     sources: list[Source] = Field(default_factory=list)
     generated_at: datetime
