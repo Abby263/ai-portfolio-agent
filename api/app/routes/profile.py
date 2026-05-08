@@ -2,9 +2,10 @@ import base64
 import re
 import zipfile
 from io import BytesIO
+from typing import Any
 from xml.etree import ElementTree
 
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Header, HTTPException, Response
 from pydantic import BaseModel, Field
 
 from ..agents.orchestrator import build_profile
@@ -38,17 +39,43 @@ class UploadResumeRequest(BaseModel):
     )
 
 
-def _incoming_patch(body: BuildProfileRequest) -> dict[str, str]:
+def _incoming_patch(body: BuildProfileRequest) -> dict[str, Any]:
     """Only update fields the client intentionally supplied."""
-    patch: dict[str, str] = {}
+    patch: dict[str, Any] = {}
     if "resume_text" in body.model_fields_set and body.resume_text:
         patch["resume_text"] = body.resume_text
+        patch["resume_filename"] = "resume.txt"
+        patch["resume_content_type"] = "text/plain; charset=utf-8"
+        patch["resume_file_base64"] = None
     return patch
+
+
+def _safe_resume_filename(value: str | None) -> str:
+    filename = (value or "resume.txt").strip()
+    filename = filename.replace("\\", "/").split("/")[-1]
+    filename = re.sub(r"[^A-Za-z0-9._ -]", "_", filename).strip(" .")
+    return filename or "resume.txt"
+
+
+def _resume_content_type(value: str | None, filename: str) -> str:
+    content_type = (value or "").strip().lower()
+    if content_type:
+        return content_type
+    lower = filename.lower()
+    if lower.endswith(".pdf"):
+        return "application/pdf"
+    if lower.endswith(".docx"):
+        return (
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+    if lower.endswith(".md"):
+        return "text/markdown; charset=utf-8"
+    return "text/plain; charset=utf-8"
 
 
 async def _build_with_customization_patch(
     username: str,
-    patch: dict[str, str],
+    patch: dict[str, Any],
     authorization: str | None,
 ) -> Profile:
     has_changes = bool(patch)
@@ -206,6 +233,55 @@ async def build_profile_endpoint(
     )
 
 
+@router.get("/profile/{username}/resume")
+async def view_resume_endpoint(username: str) -> Response:
+    if not kv_enabled():
+        raise HTTPException(status_code=404, detail="Resume storage is not configured.")
+
+    customizations = await get_customizations(username)
+    filename = _safe_resume_filename(customizations.get("resume_filename"))
+    file_base64 = customizations.get("resume_file_base64")
+
+    if file_base64:
+        try:
+            raw = base64.b64decode(file_base64, validate=True)
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail="Stored resume file is not readable.",
+            ) from e
+
+        return Response(
+            content=raw,
+            media_type=_resume_content_type(
+                customizations.get("resume_content_type"),
+                filename,
+            ),
+            headers={
+                "Content-Disposition": f'inline; filename="{filename}"',
+                "Cache-Control": "public, max-age=300",
+            },
+        )
+
+    resume_text = customizations.get("resume_text")
+    if resume_text:
+        fallback_name = (
+            filename
+            if filename.lower().endswith((".txt", ".md"))
+            else "resume.txt"
+        )
+        return Response(
+            content=resume_text,
+            media_type="text/plain; charset=utf-8",
+            headers={
+                "Content-Disposition": f'inline; filename="{fallback_name}"',
+                "Cache-Control": "public, max-age=300",
+            },
+        )
+
+    raise HTTPException(status_code=404, detail="Resume is not available.")
+
+
 @router.post("/profile/{username}/resume", response_model=Profile)
 async def upload_resume_endpoint(
     username: str,
@@ -215,6 +291,11 @@ async def upload_resume_endpoint(
     resume_text = _extract_resume_text(body)
     return await _build_with_customization_patch(
         username,
-        {"resume_text": resume_text},
+        {
+            "resume_text": resume_text,
+            "resume_filename": _safe_resume_filename(body.filename),
+            "resume_content_type": body.content_type or "",
+            "resume_file_base64": body.data_base64,
+        },
         authorization,
     )

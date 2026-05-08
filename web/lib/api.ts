@@ -72,6 +72,10 @@ export async function fetchProfile(username: string): Promise<Profile | null> {
   return res.json();
 }
 
+export function resumeUrl(username: string): string {
+  return `${API_URL}/api/profile/${encodeURIComponent(username)}/resume`;
+}
+
 export type BuildProfileInput = {
   resumeText?: string | null;
   authToken?: string | null;
