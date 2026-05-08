@@ -70,6 +70,7 @@ class Profile(BaseModel):
     experiences: list[Experience] = Field(default_factory=list)
     education: list[Education] = Field(default_factory=list)
     resume_summary: str | None = None
+    resume_file_available: bool = False
     links: dict[str, str] = Field(default_factory=dict)
     sources: list[Source] = Field(default_factory=list)
     generated_at: datetime

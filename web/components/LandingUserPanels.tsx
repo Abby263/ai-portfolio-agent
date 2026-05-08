@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
 import { useAuth, useUser } from "@clerk/nextjs";
 
@@ -80,7 +80,8 @@ function SignedUserSourcesInner() {
   const { isLoaded, isSignedIn, user } = useUser();
   const username = getGitHubUsername(user);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const resumeInputRef = useRef<HTMLInputElement | null>(null);
+  const [resumeFileLabel, setResumeFileLabel] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [uploadPending, startUploadTransition] = useTransition();
@@ -116,19 +117,19 @@ function SignedUserSourcesInner() {
     };
   }, [username]);
 
-  function submitResume() {
-    if (!username || !resumeFile) return;
+  function submitResume(file: File | null) {
+    if (!username || !file || uploadPending) return;
+    setResumeFileLabel(`${file.name} - ${(file.size / 1024).toFixed(1)} KB`);
     setError(null);
     setSuccess(null);
     startUploadTransition(async () => {
       try {
         const authToken = await getToken();
         const next = await uploadResume(username, {
-          file: resumeFile,
+          file,
           authToken,
         });
         setProfile(next);
-        setResumeFile(null);
         setSuccess("Resume uploaded and merged into your portfolio.");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Resume upload failed");
@@ -254,8 +255,7 @@ function SignedUserSourcesInner() {
               Upload resume
             </p>
             <p className="mt-1 text-sm leading-6 text-neutral-400">
-              The file is parsed by the API and merged into @{username}'s saved
-              portfolio sources when owner auth and KV are configured.
+              Add a PDF, DOCX, Markdown, or plain-text resume under 4 MB.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -263,27 +263,30 @@ function SignedUserSourcesInner() {
               Resume file
             </label>
             <input
+              ref={resumeInputRef}
               id="landing-resume-upload"
               type="file"
               accept=".pdf,.docx,.md,.markdown,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/markdown,text/plain"
-              onChange={(event) =>
-                setResumeFile(event.target.files?.[0] ?? null)
-              }
-              className="max-w-64 text-xs text-neutral-400 file:mr-3 file:rounded-md file:border-0 file:bg-[var(--accent)] file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white hover:file:bg-[var(--accent-soft)]"
+              disabled={uploadPending}
+              onChange={(event) => {
+                submitResume(event.target.files?.[0] ?? null);
+                event.currentTarget.value = "";
+              }}
+              className="sr-only"
             />
             <button
               type="button"
-              onClick={submitResume}
-              disabled={uploadPending || !resumeFile}
+              onClick={() => resumeInputRef.current?.click()}
+              disabled={uploadPending}
               className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {uploadPending ? "Uploading..." : "Upload"}
+              {uploadPending ? "Uploading..." : "Upload resume"}
             </button>
           </div>
         </div>
-        {resumeFile ? (
+        {resumeFileLabel ? (
           <p className="mt-2 truncate font-mono text-xs text-[var(--accent-soft)]">
-            {resumeFile.name} - {(resumeFile.size / 1024).toFixed(1)} KB
+            {resumeFileLabel}
           </p>
         ) : null}
         {success ? (
