@@ -8,7 +8,7 @@ const CLERK_ENABLED = Boolean(
 );
 
 export const metadata: Metadata = {
-  title: "ai-portfolio-agent",
+  title: "AI Portfolio Agent",
   description:
     "AI-powered developer portfolio that builds your story from GitHub, your resume, and more.",
 };

@@ -43,9 +43,22 @@ ROLE_WORDS = {
     "specialist",
     "analyst",
     "director",
+    "leader",
     "owner",
 }
 
+BULLET_RE = re.compile(r"^[\-\*•·●○◦▪▫‣∙]\s*")
+SECTION_RULE_RE = re.compile(r"[—–-]{3,}")
+SUMMARY_HEADER_RE = re.compile(
+    r"\b(?:highlights?|summary|professional summary|skills?|technical skills|"
+    r"programming languages?|experience|professional experience|education)\b",
+    re.IGNORECASE,
+)
+SUMMARY_STOP_RE = re.compile(
+    r"\b(?:skills?|technical skills|programming languages?|experience|"
+    r"professional experience|education)\b",
+    re.IGNORECASE,
+)
 DATE_RE = re.compile(
     r"\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|"
     r"january|february|march|april|june|july|august|september|october|"
@@ -131,8 +144,48 @@ def _split_sections(text: str) -> dict[str, str]:
 
 
 def _looks_like_role(value: str) -> bool:
-    lower = value.lower()
-    return any(word in lower for word in ROLE_WORDS)
+    lower = " ".join(value.lower().split())
+    if not lower or lower.startswith(("skill set", "skills", "technical skills")):
+        return False
+    if lower in {"prompt engineering", "engineering", "software development"}:
+        return False
+    return any(re.search(rf"\b{re.escape(word)}\b", lower) for word in ROLE_WORDS)
+
+
+def _is_bullet_line(value: str) -> bool:
+    return bool(BULLET_RE.match(value.strip()))
+
+
+def _strip_bullet(value: str) -> str:
+    return BULLET_RE.sub("", value).strip()
+
+
+def _clean_summary_text(value: str) -> str:
+    value = SECTION_RULE_RE.sub(" ", value)
+    value = SUMMARY_HEADER_RE.sub(" ", value)
+    value = re.sub(r"\s+", " ", value).strip(" :-|•●○")
+    return value
+
+
+def _summary_from_highlights(text: str) -> str | None:
+    normalized = SECTION_RULE_RE.sub(" ", text)
+    pieces = re.split(r"[●•○◦▪▫‣∙]\s*", normalized)
+    highlights: list[str] = []
+    for piece in pieces:
+        piece = SUMMARY_STOP_RE.split(piece, maxsplit=1)[0]
+        cleaned = _clean_summary_text(piece)
+        lower = cleaned.lower()
+        if len(cleaned) < 45:
+            continue
+        if lower.startswith(("programming", "skill set", "tools", "frameworks")):
+            continue
+        if re.search(r"\b(?:and|or|to|for|with|into|of|in|at)$", cleaned, re.I):
+            continue
+        highlights.append(cleaned)
+        if len(highlights) >= 3:
+            break
+    summary = " ".join(highlights).strip()
+    return summary[:600] if summary else None
 
 
 def _clean_org_line(value: str) -> str:
@@ -158,7 +211,7 @@ def _experience_blocks(exp_text: str) -> list[list[str]]:
     current: list[str] = []
     saw_detail = False
     for line in lines:
-        is_bullet = bool(re.match(r"^[\-\*•·]\s*", line))
+        is_bullet = _is_bullet_line(line)
         starts_new_role = (
             current
             and saw_detail
@@ -191,14 +244,14 @@ def _parse_experience_block(lines: list[str]) -> Experience | None:
         return None
 
     non_bullets = [
-        re.sub(r"^[\-\*•·]\s*", "", line).strip()
+        _strip_bullet(line)
         for line in clean_lines
-        if not re.match(r"^[\-\*•·]\s*", line)
+        if not _is_bullet_line(line)
     ]
     bullet_lines = [
-        re.sub(r"^[\-\*•·]\s*", "", line).strip()
+        _strip_bullet(line)
         for line in clean_lines
-        if re.match(r"^[\-\*•·]\s*", line)
+        if _is_bullet_line(line)
     ]
     if not non_bullets:
         return None
@@ -267,12 +320,16 @@ def _loose_experience_scan(text: str) -> list[Experience]:
 
     for index, line in enumerate(lines):
         lower = line.lower()
+        if _is_bullet_line(line):
+            continue
         if not _looks_like_role(line) or len(line) > 140:
             continue
         if any(
             marker in lower
             for marker in ("github.com", "linkedin.com", "technical skills")
         ):
+            continue
+        if lower.startswith(("skill set", "skills", "tools", "programming")):
             continue
 
         previous = lines[index - 1] if index > 0 else ""
@@ -281,6 +338,8 @@ def _loose_experience_scan(text: str) -> list[Experience]:
             and len(previous) < 80
             and "." not in previous
             and not _looks_like_role(previous)
+            and not _is_bullet_line(previous)
+            and not SUMMARY_HEADER_RE.search(previous)
         )
         block_start = index - 1 if include_previous else index
         block_end = min(len(lines), index + 6)
@@ -308,9 +367,11 @@ def _loose_experience_scan(text: str) -> list[Experience]:
 def _fallback_summary(text: str) -> str | None:
     lines = []
     for line in text.splitlines():
-        cleaned = " ".join(line.split()).strip()
+        cleaned = _clean_summary_text(" ".join(line.split()).strip())
         lower = cleaned.lower()
         if not cleaned:
+            continue
+        if lower in {"summary", "highlights", "skills", "experience", "education"}:
             continue
         if any(token in lower for token in ("linkedin.com", "github.com", "email")):
             continue
@@ -376,7 +437,7 @@ def _deterministic_parse(text: str) -> _ParsedResume:
 
     summary = sections.get("summary")
     if summary:
-        summary = " ".join(summary.split())[:600]
+        summary = _summary_from_highlights(summary) or _clean_summary_text(summary)[:600]
     elif sections.get("_preamble"):
         preamble_lines = [
             line.strip()
@@ -388,7 +449,12 @@ def _deterministic_parse(text: str) -> _ParsedResume:
             and not re.search(r"\+?\d[\d\s().-]{7,}\d", line)
         ]
         summary_text = " ".join(preamble_lines[1:4] or preamble_lines[:3])
-        summary = summary_text[:600] if len(summary_text) > 80 else None
+        summary = (
+            _summary_from_highlights(summary_text)
+            or (_clean_summary_text(summary_text)[:600] if len(summary_text) > 80 else None)
+        )
+    if not summary:
+        summary = _summary_from_highlights(text)
     if not summary:
         summary = _fallback_summary(text)
 

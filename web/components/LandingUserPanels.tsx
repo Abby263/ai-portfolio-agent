@@ -26,26 +26,34 @@ function getGitHubUsername(user: ClerkUser | null | undefined) {
 
 export function PortfolioNavLink({
   className,
+  label = "Portfolio",
 }: {
   className?: string;
+  label?: string;
 }) {
   if (!CLERK_ENABLED) {
     return (
       <Link href="/sources" className={className}>
-        Portfolio
+        {label}
       </Link>
     );
   }
-  return <PortfolioNavLinkInner className={className} />;
+  return <PortfolioNavLinkInner className={className} label={label} />;
 }
 
-function PortfolioNavLinkInner({ className }: { className?: string }) {
+function PortfolioNavLinkInner({
+  className,
+  label,
+}: {
+  className?: string;
+  label: string;
+}) {
   const { isLoaded, user } = useUser();
   const username = getGitHubUsername(user);
   const href = isLoaded && username ? `/${username}` : "/sources";
   return (
     <Link href={href} className={className}>
-      Portfolio
+      {label}
     </Link>
   );
 }
