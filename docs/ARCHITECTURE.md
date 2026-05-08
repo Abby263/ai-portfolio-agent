@@ -2,7 +2,7 @@
 
 ## Goals
 
-`ai-portfolio-agent` builds a living developer profile from connected sources and lets the developer act on their ecosystem (repos, live links, content) through natural language commands. It is both a portfolio (read side) and a command center (write side).
+`ai-portfolio-agent` builds a living developer profile from connected sources and lets the developer act on their ecosystem (repos, live apps, content) through natural language commands. It is both a portfolio (read side) and a command center (write side).
 
 ## High-level shape
 
@@ -24,8 +24,8 @@
                                      │
    ┌──────────────┬──────────────────┼──────────────────┬──────────────┐
    ▼              ▼                  ▼                  ▼              ▼
-GitHub       GitHub repo          Resume             LinkedIn        Instagram
-connector    homepage links       parser             connector       connector
+GitHub       Repo website         Resume             LinkedIn        Instagram
+connector    live app URLs        parser             connector       connector
 ```
 
 ## Agent topology (LangGraph)
@@ -37,7 +37,7 @@ The orchestrator decides which agent(s) to invoke for a given request. Each agen
 | **Orchestrator**               | Routes requests, plans multi-step actions, aggregates results.     |
 | **Profile Builder**            | Assembles the developer profile from indexed sources.              |
 | **GitHub Agent**               | Reads repos, READMEs, commits; later writes branches/PRs.          |
-| **Live Link Enrichment**       | Surfaces live URLs from GitHub repo homepage metadata.              |
+| **Live Link Enrichment**       | Surfaces deployed app URLs from GitHub repo website metadata.       |
 | **Resume Parser**              | Extracts skills/experience/achievements from uploaded resumes.     |
 | **Storytelling Agent**         | Generates the developer's narrative, project summaries, taglines.  |
 | **README Update Agent**        | Drafts README improvements with diagrams placeholders.             |
@@ -53,7 +53,7 @@ Build one slice end-to-end, then fan out.
 
 1. **Slice 1 — GitHub → Profile (current).** Public GitHub username → repos + READMEs → Profile Builder → JSON profile served at `/api/profile/{username}` → Next.js renders.
 2. **Slice 2 — Resume.** Upload PDF/DOCX/Markdown/plain text → Resume Parser → merged into profile.
-3. **Slice 3 — Live links.** GitHub repo homepage URLs → Profile Builder → enrich projects.
+3. **Slice 3 — Live apps.** GitHub repo Website URLs → Profile Builder → enrich projects.
 4. **Slice 4 — Storytelling.** Run Storytelling Agent over the merged profile → narrative + project summaries.
 5. **Slice 5 — Command bar.** Free-form commands routed through the Orchestrator.
 6. **Slice 6 — Write actions.** README Update + PR Creation, gated by Review/Approval.
@@ -109,5 +109,5 @@ MCP is still interesting in the *other direction*: exposing this product **as** 
 - Multi-tenancy & background workers (Celery / Arq) once syncs get heavy.
 - Diagram generation strategy (Mermaid vs. Excalidraw vs. AI-rendered).
 - Per-user OAuth tokens for write-side actions (replaces the shared `GITHUB_TOKEN` model).
-- Direct Vercel API/OAuth connector; current live links are read from GitHub repo homepage metadata.
+- Direct Vercel API/OAuth connector; current live app URLs are read from GitHub repo Website metadata.
 - Exposing this product **as** an MCP server so AI assistants can interact with the portfolio.

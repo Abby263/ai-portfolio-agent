@@ -1,4 +1,6 @@
 import base64
+import html
+import re
 from datetime import datetime, timezone
 
 import httpx
@@ -6,6 +8,8 @@ import httpx
 from ..config import settings
 
 GITHUB_API = "https://api.github.com"
+GITHUB_GRAPHQL = "https://api.github.com/graphql"
+GITHUB_WEB = "https://github.com"
 
 
 class GitHubConnector:
@@ -43,6 +47,82 @@ class GitHubConnector:
             )
             r.raise_for_status()
             return r.json()
+
+    async def fetch_pinned_repo_names(self, username: str) -> list[str]:
+        if self.token:
+            names = await self._fetch_pinned_repo_names_graphql(username)
+            if names:
+                return names
+        return await self._fetch_pinned_repo_names_html(username)
+
+    async def _fetch_pinned_repo_names_graphql(self, username: str) -> list[str]:
+        query = """
+        query($login: String!) {
+          user(login: $login) {
+            pinnedItems(first: 6, types: REPOSITORY) {
+              nodes {
+                ... on Repository {
+                  name
+                }
+              }
+            }
+          }
+        }
+        """
+        try:
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                r = await client.post(
+                    GITHUB_GRAPHQL,
+                    json={"query": query, "variables": {"login": username}},
+                    headers=self._headers,
+                )
+                r.raise_for_status()
+                nodes = (
+                    r.json()
+                    .get("data", {})
+                    .get("user", {})
+                    .get("pinnedItems", {})
+                    .get("nodes", [])
+                )
+                return [
+                    node["name"]
+                    for node in nodes
+                    if isinstance(node, dict) and node.get("name")
+                ]
+        except Exception:
+            return []
+
+    async def _fetch_pinned_repo_names_html(self, username: str) -> list[str]:
+        try:
+            async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
+                r = await client.get(
+                    f"{GITHUB_WEB}/{username}",
+                    headers={**self._headers, "Accept": "text/html"},
+                )
+                r.raise_for_status()
+        except Exception:
+            return []
+
+        page = r.text
+        marker = "js-pinned-items-reorder-list"
+        marker_index = page.find(marker)
+        if marker_index == -1:
+            return []
+        section = page[marker_index : marker_index + 80_000]
+        pattern = re.compile(
+            rf'href="/{re.escape(username)}/([^"/#?]+)"', re.IGNORECASE
+        )
+        names: list[str] = []
+        seen: set[str] = set()
+        for raw_name in pattern.findall(section):
+            name = html.unescape(raw_name)
+            key = name.lower()
+            if key not in seen:
+                seen.add(key)
+                names.append(name)
+            if len(names) >= 6:
+                break
+        return names
 
     async def fetch_repo(self, owner: str, repo: str) -> dict:
         async with httpx.AsyncClient(timeout=20.0) as client:

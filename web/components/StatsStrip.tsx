@@ -11,14 +11,15 @@ export function StatsStrip({ profile }: { profile: Profile }) {
   const liveProjects = profile.projects.filter(
     (p) => p.deployment_url !== null || p.homepage !== null,
   ).length;
+  const pinnedProjects = profile.projects.filter((p) => p.pinned).length;
   const languages = new Set(
     profile.projects.map((p) => p.language).filter(Boolean) as string[],
   ).size;
 
   const items: { label: string; value: string }[] = [
     { label: "Stars", value: formatNumber(totalStars) },
-    { label: "Projects", value: String(profile.projects.length) },
-    { label: "Live", value: String(liveProjects) },
+    { label: "Featured", value: String(pinnedProjects) },
+    { label: "Live apps", value: String(liveProjects) },
     { label: "Languages", value: String(languages) },
   ];
 

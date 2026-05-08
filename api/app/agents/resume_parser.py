@@ -33,6 +33,7 @@ class _ParsedResume(BaseModel):
     )
     experiences: list[Experience] = Field(default_factory=list)
     education: list[Education] = Field(default_factory=list)
+    links: dict[str, str] = Field(default_factory=dict)
 
 
 def _llm_parse(text: str) -> _ParsedResume | None:
@@ -51,7 +52,8 @@ def _llm_parse(text: str) -> _ParsedResume | None:
                     content=(
                         "Extract structured data from a developer resume. "
                         "Be precise — do not invent details that aren't in the text. "
-                        "Skills should be discrete tokens (e.g. 'Python', 'React', 'PostgreSQL'), not phrases."
+                        "Skills should be discrete tokens (e.g. 'Python', 'React', 'PostgreSQL'), not phrases. "
+                        "Extract contact links exactly when present: email, phone, linkedin, github, website."
                     )
                 ),
                 HumanMessage(content=text),
@@ -80,6 +82,49 @@ def _split_sections(text: str) -> dict[str, str]:
         else:
             sections[current].append(raw)
     return {k: "\n".join(v).strip() for k, v in sections.items() if v}
+
+
+def _normalize_url(value: str) -> str:
+    value = value.strip().rstrip(".,;)")
+    if re.match(r"^https?://", value, re.IGNORECASE):
+        return value
+    return f"https://{value.lstrip('/')}"
+
+
+def _extract_links(text: str) -> dict[str, str]:
+    links: dict[str, str] = {}
+
+    email = re.search(
+        r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b", text
+    )
+    if email:
+        links["email"] = email.group(0)
+
+    phone_matches = re.finditer(
+        r"(?<!\d)(?:\+?\d[\d\s().-]{7,}\d)(?!\d)", text
+    )
+    for match in phone_matches:
+        candidate = " ".join(match.group(0).split()).strip()
+        digits = re.sub(r"\D", "", candidate)
+        if 10 <= len(digits) <= 15:
+            links["phone"] = candidate
+            break
+
+    url_pattern = re.compile(
+        r"(?:https?://)?(?:www\.)?(?:linkedin\.com|github\.com)/[^\s<>)]+|https?://[^\s<>)]+",
+        re.IGNORECASE,
+    )
+    for match in url_pattern.finditer(text):
+        url = _normalize_url(match.group(0))
+        lower = url.lower()
+        if "linkedin.com/" in lower:
+            links.setdefault("linkedin", url)
+        elif "github.com/" in lower:
+            links.setdefault("github", url)
+        elif not any(skip in lower for skip in ("mailto:", "tel:")):
+            links.setdefault("website", url)
+
+    return links
 
 
 def _deterministic_parse(text: str) -> _ParsedResume:
@@ -142,12 +187,14 @@ def parse_resume(text: str, fetched_at: datetime) -> Resume:
         raise ValueError("Resume text is empty")
 
     parsed = _llm_parse(text) or _deterministic_parse(text)
+    links = {**parsed.links, **_extract_links(text)}
     digest = hashlib.sha1(text.encode("utf-8")).hexdigest()[:12]
     return Resume(
         summary=parsed.summary,
         skills=parsed.skills,
         experiences=parsed.experiences,
         education=parsed.education,
+        links=links,
         raw_text=text,
         sources=[
             Source(connector="resume", source_id=digest, fetched_at=fetched_at)

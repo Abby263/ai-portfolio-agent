@@ -103,7 +103,7 @@ function SourcesInner({
       <div className="divide-y divide-[var(--border)] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--background)]">
         <Row
           name="GitHub"
-          detail={`@${profile.username} - ${profile.projects.length} repos - ${liveProjects.length} live links`}
+          detail={`@${profile.username} - ${profile.projects.length} repos - ${liveProjects.length} live apps`}
           connected
         />
 

@@ -22,6 +22,19 @@ async def fetch_github_node(state: AgentState) -> AgentState:
     gh = GitHubConnector()
     user = await gh.fetch_user(state["username"])
     repos = await gh.fetch_repos(state["username"])
+    pinned_names = await gh.fetch_pinned_repo_names(state["username"])
+    pinned_keys = {name.lower() for name in pinned_names}
+
+    seen = {repo.get("name", "").lower() for repo in repos}
+    for pinned_name in pinned_names:
+        if pinned_name.lower() in seen:
+            continue
+        try:
+            repos.append(await gh.fetch_repo(state["username"], pinned_name))
+        except Exception:
+            continue
+    for repo in repos:
+        repo["_pinned"] = repo.get("name", "").lower() in pinned_keys
     return {"github_user": user, "github_repos": repos}
 
 

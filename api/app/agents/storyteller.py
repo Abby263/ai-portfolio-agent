@@ -43,7 +43,15 @@ def _llm_tell(profile: Profile) -> _StoryOutput | None:
             temperature=0.4,
         ).with_structured_output(_StoryOutput)
 
-        top = sorted(profile.projects, key=lambda p: p.stars, reverse=True)[:6]
+        top = sorted(
+            profile.projects,
+            key=lambda p: (
+                1 if p.pinned else 0,
+                1 if (p.deployment_url or p.homepage) else 0,
+                p.stars,
+            ),
+            reverse=True,
+        )[:6]
         repo_lines = "\n".join(
             f"- {p.name} ({p.language or '?'}, {p.stars}★, topics={p.topics[:4]}): {p.description or ''}"
             for p in top
@@ -85,7 +93,15 @@ def _llm_tell(profile: Profile) -> _StoryOutput | None:
 
 def _deterministic_tell(profile: Profile) -> _StoryOutput:
     top_skills = profile.skills[:3]
-    top = sorted(profile.projects, key=lambda p: p.stars, reverse=True)[:5]
+    top = sorted(
+        profile.projects,
+        key=lambda p: (
+            1 if p.pinned else 0,
+            1 if (p.deployment_url or p.homepage) else 0,
+            p.stars,
+        ),
+        reverse=True,
+    )[:5]
 
     skill_phrase = ", ".join(top_skills) if top_skills else "open-source"
     tagline = (
@@ -119,6 +135,8 @@ def _deterministic_tell(profile: Profile) -> _StoryOutput:
             bullets.append(f"Built primarily in {p.language}.")
         if p.stars > 0:
             bullets.append(f"{p.stars:,} stars on GitHub.")
+        if p.deployment_url or p.homepage:
+            bullets.append("Has a deployed live app.")
         if bullets:
             highlights.append(
                 _ProjectHighlights(name=p.name, highlights=bullets[:3])
