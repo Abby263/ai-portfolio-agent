@@ -20,6 +20,9 @@ class Project(BaseModel):
     stars: int = 0
     topics: list[str] = []
     highlights: list[str] = []
+    deployment_url: str | None = None
+    deployment_target: str | None = None
+    deployment_count: int = 0
     sources: list[Source] = Field(default_factory=list)
 
 

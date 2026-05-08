@@ -8,13 +8,15 @@ import { ExperienceList } from "@/components/ExperienceList";
 import { ProfileHero } from "@/components/ProfileHero";
 import { ProjectCard } from "@/components/ProjectCard";
 import { ReadmeWriter } from "@/components/ReadmeWriter";
-import { ResumeEnhancer } from "@/components/ResumeEnhancer";
 import { SkillCloud } from "@/components/SkillCloud";
+import { Sources } from "@/components/Sources";
 import type { Profile, SuggestedAction } from "@/lib/api";
 
 export function ProfileView({ initial }: { initial: Profile }) {
   const [profile, setProfile] = useState(initial);
-  const [activeAction, setActiveAction] = useState<SuggestedAction | null>(null);
+  const [activeAction, setActiveAction] = useState<SuggestedAction | null>(
+    null,
+  );
 
   function handleAction(action: SuggestedAction) {
     if (action.kind === "readme_update") {
@@ -24,9 +26,11 @@ export function ProfileView({ initial }: { initial: Profile }) {
     setActiveAction({
       ...action,
       description:
-        action.description + " (this action isn't wired up yet — coming soon).",
+        action.description +
+        " (this action isn't wired up yet — coming soon).",
     });
   }
+
   return (
     <>
       <ProfileHero profile={profile} />
@@ -37,25 +41,8 @@ export function ProfileView({ initial }: { initial: Profile }) {
         </p>
       ) : null}
 
-      <div className="mt-6 flex flex-wrap items-center gap-2">
-        <ResumeEnhancer initial={profile} onUpdate={setProfile} />
-      </div>
-
-      <div className="mt-8">
-        <CommandBar profile={profile} onAction={handleAction} />
-      </div>
-
-      {activeAction?.kind === "readme_update" ? (
-        <div className="mt-4">
-          <ReadmeWriter
-            profile={profile}
-            onClose={() => setActiveAction(null)}
-          />
-        </div>
-      ) : null}
-
       {profile.themes.length > 0 ? (
-        <div className="mt-6 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           {profile.themes.map((t) => (
             <span
               key={t}
@@ -67,8 +54,12 @@ export function ProfileView({ initial }: { initial: Profile }) {
         </div>
       ) : null}
 
+      <div className="mt-8">
+        <Sources profile={profile} onUpdate={setProfile} />
+      </div>
+
       {profile.resume_summary ? (
-        <section className="mt-8 rounded-xl border border-[var(--border)] bg-[var(--muted)] p-5">
+        <section className="mt-10 rounded-xl border border-[var(--border)] bg-[var(--muted)] p-5">
           <p className="text-neutral-200 leading-relaxed">
             {profile.resume_summary}
           </p>
@@ -130,6 +121,19 @@ export function ProfileView({ initial }: { initial: Profile }) {
             <EducationList items={profile.education} />
           </div>
         </section>
+      ) : null}
+
+      <div className="mt-12">
+        <CommandBar profile={profile} onAction={handleAction} />
+      </div>
+
+      {activeAction?.kind === "readme_update" ? (
+        <div className="mt-4">
+          <ReadmeWriter
+            profile={profile}
+            onClose={() => setActiveAction(null)}
+          />
+        </div>
       ) : null}
 
       <p className="mt-16 text-xs text-neutral-600">

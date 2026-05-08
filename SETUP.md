@@ -75,6 +75,14 @@ The app runs at `http://localhost:3000`. Try `http://localhost:3000/torvalds`.
 |----------|-----------|---------|
 | `NEXT_PUBLIC_API_URL` | Yes | URL of the FastAPI backend, e.g. `https://ai-portfolio-agent-api.vercel.app`. Inlined at build time. |
 
+### Per-user secrets (handed in via the UI)
+
+Some sources are too sensitive — or too account-specific — to live as a server-wide secret. The UI accepts these inline:
+
+| Source | Where the user enters it | What it unlocks |
+|--------|--------------------------|-----------------|
+| Vercel access token | "Connect Vercel" row on the profile page | The Vercel Agent fetches the user's deployments and matches them to repos so live URLs render on each project. The token is sent with one request and not persisted by the API. |
+
 ---
 
 ## 3. How to get each secret
@@ -115,6 +123,17 @@ The token is needed for two things: lifting GitHub's rate limits on read calls (
 ### `GITHUB_WRITE_OWNER`
 
 This is just your GitHub username (e.g. `Abby263`). Set it as a string. It's the safety guardrail — the API server refuses PR creation against any other owner's repos, even if the token would technically allow it.
+
+### Vercel access token (per-user, UI-only)
+
+Used by the Vercel Agent to list the visiting user's deployments and match them to their GitHub repos. There is **no** server-side `VERCEL_TOKEN` env var — each user enters their own token in the **Connect Vercel** row on the profile page.
+
+1. Sign in at <https://vercel.com>.
+2. Go to **Account Settings → Tokens** (<https://vercel.com/account/tokens>).
+3. **Create Token** with the default *Full Account* scope and a short expiration (24h is enough for a one-time demo). If you trust the deployment long-term, choose 30 days and rotate.
+4. Copy the value (starts with `vercel_…`) and paste it into the Connect Vercel row on the profile page.
+
+The token is sent once with the build-profile request and is **not persisted** by the server.
 
 ---
 

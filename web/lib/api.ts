@@ -16,6 +16,9 @@ export type Project = {
   stars: number;
   topics: string[];
   highlights: string[];
+  deployment_url: string | null;
+  deployment_target: string | null;
+  deployment_count: number;
   sources: Source[];
 };
 
@@ -68,14 +71,22 @@ export async function fetchProfile(username: string): Promise<Profile | null> {
   return res.json();
 }
 
+export type BuildProfileInput = {
+  resumeText?: string | null;
+  vercelToken?: string | null;
+};
+
 export async function buildProfile(
   username: string,
-  resumeText?: string,
+  input: BuildProfileInput = {},
 ): Promise<Profile> {
   const res = await fetch(`${API_URL}/api/profile/${username}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ resume_text: resumeText ?? null }),
+    body: JSON.stringify({
+      resume_text: input.resumeText ?? null,
+      vercel_token: input.vercelToken ?? null,
+    }),
   });
   if (!res.ok) {
     throw new Error(`Failed to build profile (${res.status})`);
