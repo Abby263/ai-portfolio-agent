@@ -33,7 +33,7 @@ export default function Home() {
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-4 px-6 py-4 sm:flex-row sm:items-center">
           <Link href="/" className="flex items-center gap-2 text-sm font-semibold">
             <span className="inline-block h-2 w-2 rounded-sm bg-[var(--accent-soft)]" />
-            AI Portfolio Agent
+            AI Developer Portfolio Manager Agent
           </Link>
           <nav className="flex flex-wrap items-center gap-3 text-xs text-neutral-400 sm:gap-4">
             <Link href="/sources" className="transition hover:text-neutral-100">
@@ -61,7 +61,7 @@ export default function Home() {
                 Portfolio builder plus repo action agent
               </p>
               <h1 className="max-w-3xl text-5xl font-semibold leading-[1.05] md:text-6xl">
-                AI Portfolio Agent
+                AI Developer Portfolio Manager Agent
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-neutral-300 md:text-lg">
                 Connect with GitHub, add your resume on the Sources page, and
