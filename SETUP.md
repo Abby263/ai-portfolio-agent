@@ -111,13 +111,17 @@ The UI labels these as deployed apps.
 
 | Input | Where it is entered | What it unlocks |
 |---|---|---|
-| Resume file | Profile page -> Owner tools -> Resume | Upload PDF, DOCX, Markdown, or text. The parser extracts skills, experience, education, and summary. |
+| Resume file | `/sources` page | Upload PDF, DOCX, Markdown, or text. The parser extracts skills, experience, education, contact links, and summary. |
 
 The API saves owner customizations only when all of these are true:
 
 - Vercel KV is configured on `ai-portfolio-agent-api`.
 - Clerk is configured on both projects.
 - The signed-in Clerk user has a GitHub account matching the profile URL.
+
+The public portfolio is also cached in KV after it is generated once. Use the
+`/sources` page's **Update portfolio** button when the owner wants to rebuild it
+from the latest resume and GitHub metadata.
 
 ---
 

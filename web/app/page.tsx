@@ -3,10 +3,7 @@ import { redirect } from "next/navigation";
 
 import { AuthBadge } from "@/components/AuthBadge";
 import { BuildButton } from "@/components/BuildButton";
-import {
-  PortfolioNavLink,
-  SignedUserSources,
-} from "@/components/LandingUserPanels";
+import { PortfolioNavLink } from "@/components/LandingUserPanels";
 
 async function goToProfile(formData: FormData) {
   "use server";
@@ -50,9 +47,9 @@ export default function Home() {
             ai-portfolio-agent
           </Link>
           <nav className="flex flex-wrap items-center gap-3 text-xs text-neutral-400 sm:gap-4">
-            <a href="#sources" className="transition hover:text-neutral-100">
+            <Link href="/sources" className="transition hover:text-neutral-100">
               Sources
-            </a>
+            </Link>
             <PortfolioNavLink className="transition hover:text-neutral-100" />
             <a
               href="https://github.com/Abby263/ai-portfolio-agent"
@@ -150,30 +147,43 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="sources" className="border-b border-[var(--border)]/70">
-          <div className="mx-auto max-w-6xl px-6 py-16">
-            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-              <div>
-                <h2 className="text-sm font-semibold text-[var(--accent-soft)]">
-                  Connected sources
-                </h2>
-                <p className="mt-2 max-w-2xl text-3xl font-semibold leading-tight">
-                  Sign in with GitHub to see the source connections made for
-                  your account.
-                </p>
-              </div>
-              <a
-                href="https://github.com/Abby263/ai-portfolio-agent/blob/main/docs/ARCHITECTURE.md"
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm text-neutral-400 underline transition hover:text-[var(--accent-soft)]"
-              >
-                Architecture doc
-              </a>
+        <section className="border-b border-[var(--border)]/70">
+          <div className="mx-auto grid max-w-6xl gap-6 px-6 py-14 md:grid-cols-3">
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--muted)] p-5">
+              <p className="text-xs uppercase text-neutral-500">
+                Portfolio cache
+              </p>
+              <p className="mt-3 text-xl font-semibold text-neutral-100">
+                Fast after first build
+              </p>
+              <p className="mt-2 text-sm leading-6 text-neutral-400">
+                The generated portfolio is saved so repeat visits do not
+                rebuild unless the owner updates sources.
+              </p>
             </div>
-
-            <div className="mt-8">
-              <SignedUserSources />
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--muted)] p-5">
+              <p className="text-xs uppercase text-neutral-500">
+                Resume-aware
+              </p>
+              <p className="mt-3 text-xl font-semibold text-neutral-100">
+                Professional work matters
+              </p>
+              <p className="mt-2 text-sm leading-6 text-neutral-400">
+                Uploaded resumes add roles, education, contact details, and
+                career context to the public page.
+              </p>
+            </div>
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--muted)] p-5">
+              <p className="text-xs uppercase text-neutral-500">
+                Deployed apps
+              </p>
+              <p className="mt-3 text-xl font-semibold text-neutral-100">
+                Pinned repos first
+              </p>
+              <p className="mt-2 text-sm leading-6 text-neutral-400">
+                GitHub pinned repositories and repo Website URLs drive the
+                project gallery.
+              </p>
             </div>
           </div>
         </section>

@@ -25,6 +25,7 @@ The backend uses **LangGraph**-based AI agents to retrieve, reason, generate, an
 - **Profile from GitHub** — repos, languages, topics, stars merged into a structured profile.
 - **Project live apps from GitHub** — pinned repos are featured first, and deployed URLs come from each repo's Website field; no per-user Vercel token is needed in the UI.
 - **Resume parser** — upload PDF, DOCX, Markdown, or plain text; experience, education, and skills are extracted and merged with provenance.
+- **Saved portfolio snapshots** — the first generated portfolio is cached in KV; owners refresh it from `/sources` after source changes.
 - **Storytelling agent** — generates a tagline, narrative, recurring themes, and per-project highlights from the merged profile.
 - **Conversational command bar** — "Ask my portfolio" UI plus a `POST /api/command` endpoint with structured suggested actions.
 - **README Update Agent** — drafts a structured README for any of your repos and opens a real pull request after explicit human review.
@@ -86,8 +87,8 @@ cd web && npm install && npm run dev
 | Method | Path                              | Purpose                                                     |
 |--------|-----------------------------------|-------------------------------------------------------------|
 | GET    | `/health`                         | Liveness check.                                             |
-| GET    | `/api/profile/{username}`         | Builds a profile from GitHub only (fast path).              |
-| POST   | `/api/profile/{username}`         | Builds a profile, optionally merging an uploaded resume.    |
+| GET    | `/api/profile/{username}`         | Returns the cached profile, building one on first request.  |
+| POST   | `/api/profile/{username}`         | Regenerates the profile, optionally merging resume text.    |
 | POST   | `/api/command`                    | Runs the command-router agent against a profile.            |
 | POST   | `/api/actions/draft-readme`       | Drafts a proposed README for a repo. Read-only.             |
 | POST   | `/api/actions/create-pr`          | Branches, commits, opens a PR. Requires `GITHUB_TOKEN`.     |

@@ -12,8 +12,10 @@ from ..auth import authenticated_github_username, clerk_enabled
 from ..models.profile import Profile
 from ..storage import (
     get_customizations,
+    get_profile_cache,
     kv_enabled,
     save_customizations,
+    save_profile_cache,
 )
 
 router = APIRouter()
@@ -77,10 +79,13 @@ async def _build_with_customization_patch(
         customizations = patch
 
     try:
-        return await build_profile(
+        profile = await build_profile(
             username,
             resume_text=customizations.get("resume_text"),
         )
+        if kv_enabled():
+            await save_profile_cache(username, profile)
+        return profile
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -168,12 +173,21 @@ def _extract_resume_text(body: UploadResumeRequest) -> str:
 
 @router.get("/profile/{username}", response_model=Profile)
 async def get_profile(username: str) -> Profile:
-    customizations = await get_customizations(username) if kv_enabled() else {}
+    if kv_enabled():
+        cached = await get_profile_cache(username)
+        if cached is not None:
+            return cached
+        customizations = await get_customizations(username)
+    else:
+        customizations = {}
     try:
-        return await build_profile(
+        profile = await build_profile(
             username,
             resume_text=customizations.get("resume_text"),
         )
+        if kv_enabled():
+            await save_profile_cache(username, profile)
+        return profile
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
