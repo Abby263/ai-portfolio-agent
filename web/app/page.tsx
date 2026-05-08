@@ -26,8 +26,8 @@ const PIPELINE = [
     detail: "Upload PDF, DOCX, Markdown, or paste text for skills and roles.",
   },
   {
-    label: "Vercel",
-    detail: "Match deployments to repositories and surface live project URLs.",
+    label: "Live links",
+    detail: "Use GitHub repo homepage links for deployed projects.",
   },
   {
     label: "Portfolio",
@@ -36,21 +36,6 @@ const PIPELINE = [
   {
     label: "Actions",
     detail: "Draft READMEs and open PRs only after owner review.",
-  },
-];
-
-const CAPABILITIES = [
-  {
-    title: "Read-side portfolio",
-    body: "Anyone can view a generated portfolio built from public GitHub data and saved owner sources.",
-  },
-  {
-    title: "Owner source console",
-    body: "The signed-in GitHub owner can upload a resume, connect Vercel, and rebuild the profile in place.",
-  },
-  {
-    title: "Agentic write path",
-    body: "The command bar can draft repo updates and open GitHub PRs through a guarded API action.",
   },
 ];
 
@@ -66,9 +51,6 @@ export default function Home() {
             ai-portfolio-agent
           </Link>
           <nav className="flex flex-wrap items-center gap-3 text-xs text-neutral-400 sm:gap-4">
-            <a href="#purpose" className="transition hover:text-neutral-100">
-              Purpose
-            </a>
             <a href="#sources" className="transition hover:text-neutral-100">
               Sources
             </a>
@@ -98,9 +80,9 @@ export default function Home() {
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-neutral-300 md:text-lg">
                 This repo builds a public developer portfolio from GitHub,
-                resume uploads, and Vercel deployments. The same profile also
-                becomes a command center for README drafts and guarded GitHub
-                pull requests.
+                resume uploads, and live links already stored on GitHub repos.
+                The same profile also becomes a command center for README
+                drafts and guarded GitHub pull requests.
               </p>
 
               <form
@@ -166,35 +148,6 @@ export default function Home() {
                 ))}
               </ol>
             </aside>
-          </div>
-        </section>
-
-        <section id="purpose" className="border-b border-[var(--border)]/70">
-          <div className="mx-auto max-w-6xl px-6 py-10">
-            <div className="max-w-2xl">
-              <h2 className="text-sm font-semibold text-[var(--accent-soft)]">
-                Purpose
-              </h2>
-              <p className="mt-2 text-3xl font-semibold leading-tight">
-                A public portfolio for visitors and a private control surface
-                for the owner.
-              </p>
-            </div>
-            <div className="mt-8 grid gap-4 md:grid-cols-3">
-              {CAPABILITIES.map((item) => (
-                <article
-                  key={item.title}
-                  className="rounded-lg border border-[var(--border)] bg-[var(--muted)] p-5"
-                >
-                  <h3 className="text-base font-semibold text-neutral-100">
-                    {item.title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-neutral-400">
-                    {item.body}
-                  </p>
-                </article>
-              ))}
-            </div>
           </div>
         </section>
 

@@ -2,7 +2,6 @@ from collections import Counter
 from datetime import datetime
 
 from ..models.profile import Profile, Project, Resume, Source
-from .vercel_agent import enrich_projects_with_deployments
 
 
 def _project_from_repo(repo: dict, fetched_at: datetime) -> Project:
@@ -52,25 +51,12 @@ def synthesize_profile(
     repos: list[dict],
     fetched_at: datetime,
     resume: Resume | None = None,
-    vercel_deployments: list[dict] | None = None,
 ) -> Profile:
     projects = sorted(
         [_project_from_repo(r, fetched_at) for r in repos if not r.get("fork")],
         key=lambda p: p.stars,
         reverse=True,
     )
-    if vercel_deployments:
-        enrich_projects_with_deployments(
-            projects, vercel_deployments, fetched_at=fetched_at
-        )
-        # bump deployed projects to the top of the list
-        projects.sort(
-            key=lambda p: (
-                1 if p.deployment_url else 0,
-                p.stars,
-            ),
-            reverse=True,
-        )
     links: dict[str, str] = {}
     if user.get("html_url"):
         links["github"] = user["html_url"]

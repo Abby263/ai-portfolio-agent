@@ -9,7 +9,7 @@ function formatNumber(n: number): string {
 export function StatsStrip({ profile }: { profile: Profile }) {
   const totalStars = profile.projects.reduce((sum, p) => sum + p.stars, 0);
   const liveProjects = profile.projects.filter(
-    (p) => p.deployment_url !== null,
+    (p) => p.deployment_url !== null || p.homepage !== null,
   ).length;
   const languages = new Set(
     profile.projects.map((p) => p.language).filter(Boolean) as string[],

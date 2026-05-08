@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 
-import { useUser } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 
 import { ClerkGitHubSignInButton } from "@/components/AuthBadge";
-import { fetchProfile, type Profile } from "@/lib/api";
+import { fetchProfile, type Profile, uploadResume } from "@/lib/api";
 
 const CLERK_ENABLED = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
@@ -63,15 +63,20 @@ export function SignedUserSources() {
 }
 
 function SignedUserSourcesInner() {
+  const { getToken } = useAuth();
   const { isLoaded, isSignedIn, user } = useUser();
   const username = getGitHubUsername(user);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
   useEffect(() => {
     if (!username) {
       setProfile(null);
       setError(null);
+      setSuccess(null);
       return;
     }
 
@@ -96,6 +101,26 @@ function SignedUserSourcesInner() {
       cancelled = true;
     };
   }, [username]);
+
+  function submitResume() {
+    if (!username || !resumeFile) return;
+    setError(null);
+    setSuccess(null);
+    startTransition(async () => {
+      try {
+        const authToken = await getToken();
+        const next = await uploadResume(username, {
+          file: resumeFile,
+          authToken,
+        });
+        setProfile(next);
+        setResumeFile(null);
+        setSuccess("Resume uploaded and merged into your portfolio.");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Resume upload failed");
+      }
+    });
+  }
 
   if (!isLoaded) {
     return (
@@ -138,7 +163,9 @@ function SignedUserSourcesInner() {
   }
 
   const liveProjects =
-    profile?.projects.filter((project) => project.deployment_url).length ?? 0;
+    profile?.projects.filter(
+      (project) => project.deployment_url || project.homepage,
+    ).length ?? 0;
   const resumeConnected = Boolean(
     profile &&
       (profile.resume_summary ||
@@ -148,7 +175,10 @@ function SignedUserSourcesInner() {
   );
   const sourceCount = profile
     ? profile.sources.length +
-      profile.projects.reduce((total, project) => total + project.sources.length, 0)
+      profile.projects.reduce(
+        (total, project) => total + project.sources.length,
+        0,
+      )
     : 0;
 
   const rows = [
@@ -165,21 +195,21 @@ function SignedUserSourcesInner() {
         : "Loading public GitHub profile",
     },
     {
+      name: "Project live links",
+      connected: liveProjects > 0,
+      detail:
+        liveProjects > 0
+          ? `${liveProjects} projects expose live links from GitHub repo metadata`
+          : "Add homepage URLs to GitHub repos to show deployed project links.",
+    },
+    {
       name: "Resume",
       connected: resumeConnected,
       detail: resumeConnected
         ? `${profile?.experiences.length ?? 0} roles and ${
             profile?.education.length ?? 0
           } education entries connected`
-        : "Not connected yet. Add it from your portfolio owner tools.",
-    },
-    {
-      name: "Vercel deployments",
-      connected: liveProjects > 0,
-      detail:
-        liveProjects > 0
-          ? `${liveProjects} projects have live deployment URLs`
-          : "Not connected yet. Add a Vercel token from your portfolio owner tools.",
+        : "Upload a resume PDF here to enrich your profile.",
     },
   ];
 
@@ -199,6 +229,49 @@ function SignedUserSourcesInner() {
         {rows.map((row) => (
           <ConnectionRow key={row.name} {...row} />
         ))}
+      </div>
+      <div className="mt-4 rounded-lg border border-dashed border-[var(--border)] bg-[var(--background)] p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-sm font-medium text-neutral-100">
+              Upload resume PDF
+            </p>
+            <p className="mt-1 text-sm leading-6 text-neutral-400">
+              The PDF is parsed by the API and merged into @{username}'s saved
+              source profile when owner auth and KV are configured.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <label htmlFor="landing-resume-upload" className="sr-only">
+              Resume PDF
+            </label>
+            <input
+              id="landing-resume-upload"
+              type="file"
+              accept=".pdf,application/pdf"
+              onChange={(event) =>
+                setResumeFile(event.target.files?.[0] ?? null)
+              }
+              className="max-w-64 text-xs text-neutral-400 file:mr-3 file:rounded-md file:border-0 file:bg-[var(--accent)] file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white hover:file:bg-[var(--accent-soft)]"
+            />
+            <button
+              type="button"
+              onClick={submitResume}
+              disabled={pending || !resumeFile}
+              className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {pending ? "Uploading..." : "Upload"}
+            </button>
+          </div>
+        </div>
+        {resumeFile ? (
+          <p className="mt-2 truncate font-mono text-xs text-[var(--accent-soft)]">
+            {resumeFile.name} - {(resumeFile.size / 1024).toFixed(1)} KB
+          </p>
+        ) : null}
+        {success ? (
+          <p className="mt-3 text-xs text-emerald-300">{success}</p>
+        ) : null}
       </div>
       <p className="mt-4 text-xs text-neutral-500">
         {profile
