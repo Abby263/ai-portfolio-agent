@@ -2,7 +2,7 @@ from collections import Counter
 from datetime import datetime
 
 from ..config import settings
-from ..models.profile import Profile, Project, Source
+from ..models.profile import Profile, Project, Resume, Source
 
 
 def _project_from_repo(repo: dict, fetched_at: datetime) -> Project:
@@ -31,6 +31,20 @@ def _skills_from_repos(repos: list[dict], k: int = 12) -> list[str]:
     return [name for name, _ in combined.most_common(k)]
 
 
+def _merge_skills(github_skills: list[str], resume_skills: list[str], k: int = 20) -> list[str]:
+    seen: set[str] = set()
+    merged: list[str] = []
+    # resume skills first — they're the developer's self-reported truth
+    for s in resume_skills + github_skills:
+        key = s.lower()
+        if key not in seen:
+            seen.add(key)
+            merged.append(s)
+        if len(merged) >= k:
+            break
+    return merged
+
+
 def _llm_story(profile: Profile) -> str | None:
     if not settings.openai_api_key:
         return None
@@ -44,17 +58,28 @@ def _llm_story(profile: Profile) -> str | None:
             f"- {p.name} ({p.language or '?'}, {p.stars}★): {p.description or ''}"
             for p in top
         )
+        resume_block = (
+            f"\nResume summary: {profile.resume_summary}\n"
+            if profile.resume_summary
+            else ""
+        )
+        exp_lines = ""
+        if profile.experiences:
+            exp_lines = "\nExperience:\n" + "\n".join(
+                f"- {e.role} at {e.company}" for e in profile.experiences[:5]
+            )
         messages = [
             SystemMessage(
                 content=(
                     "You write short, engaging developer narratives. "
-                    "2-3 paragraphs, first person, concrete and specific."
+                    "2-3 paragraphs, first person, concrete and specific. "
+                    "Ground every claim in the supplied facts; do not invent."
                 )
             ),
             HumanMessage(
                 content=(
                     f"Developer: {profile.display_name or profile.username}\n"
-                    f"Bio: {profile.bio or ''}\n\n"
+                    f"Bio: {profile.bio or ''}{resume_block}{exp_lines}\n\n"
                     f"Top projects:\n{repo_lines}\n\n"
                     "Write a developer story."
                 )
@@ -71,6 +96,7 @@ def synthesize_profile(
     user: dict,
     repos: list[dict],
     fetched_at: datetime,
+    resume: Resume | None = None,
 ) -> Profile:
     projects = sorted(
         [_project_from_repo(r, fetched_at) for r in repos if not r.get("fork")],
@@ -85,6 +111,21 @@ def synthesize_profile(
     if user.get("twitter_username"):
         links["twitter"] = f"https://twitter.com/{user['twitter_username']}"
 
+    github_skills = _skills_from_repos(repos)
+    skills = (
+        _merge_skills(github_skills, resume.skills) if resume else github_skills
+    )
+
+    sources = [
+        Source(
+            connector="github",
+            source_id=str(user["id"]),
+            fetched_at=fetched_at,
+        )
+    ]
+    if resume:
+        sources.extend(resume.sources)
+
     profile = Profile(
         username=username,
         display_name=user.get("name") or username,
@@ -92,16 +133,13 @@ def synthesize_profile(
         bio=user.get("bio"),
         avatar_url=user.get("avatar_url"),
         location=user.get("location"),
-        skills=_skills_from_repos(repos),
+        skills=skills,
         projects=projects,
+        experiences=resume.experiences if resume else [],
+        education=resume.education if resume else [],
+        resume_summary=resume.summary if resume else None,
         links=links,
-        sources=[
-            Source(
-                connector="github",
-                source_id=str(user["id"]),
-                fetched_at=fetched_at,
-            )
-        ],
+        sources=sources,
         generated_at=fetched_at,
     )
     profile.story = _llm_story(profile)
