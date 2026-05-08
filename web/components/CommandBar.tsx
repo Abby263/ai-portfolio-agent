@@ -21,7 +21,13 @@ const SUGGESTED_PROMPTS = [
   "Update READMEs across my repos",
 ];
 
-export function CommandBar({ profile }: { profile: Profile }) {
+export function CommandBar({
+  profile,
+  onAction,
+}: {
+  profile: Profile;
+  onAction?: (action: SuggestedAction) => void;
+}) {
   const [text, setText] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +99,7 @@ export function CommandBar({ profile }: { profile: Profile }) {
       {turns.length > 0 ? (
         <div className="mt-4 space-y-4">
           {turns.map((turn, i) => (
-            <Turn key={i} turn={turn} />
+            <Turn key={i} turn={turn} onAction={onAction} />
           ))}
         </div>
       ) : null}
@@ -101,7 +107,13 @@ export function CommandBar({ profile }: { profile: Profile }) {
   );
 }
 
-function Turn({ turn }: { turn: Turn }) {
+function Turn({
+  turn,
+  onAction,
+}: {
+  turn: Turn;
+  onAction?: (a: SuggestedAction) => void;
+}) {
   return (
     <div className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-3">
       <p className="text-xs text-neutral-500">› {turn.command}</p>
@@ -111,7 +123,7 @@ function Turn({ turn }: { turn: Turn }) {
       {turn.response.suggested_actions.length > 0 ? (
         <div className="mt-3 flex flex-wrap gap-2">
           {turn.response.suggested_actions.map((a, i) => (
-            <ActionPill key={i} action={a} />
+            <ActionPill key={i} action={a} onClick={onAction} />
           ))}
         </div>
       ) : null}
@@ -119,14 +131,26 @@ function Turn({ turn }: { turn: Turn }) {
   );
 }
 
-function ActionPill({ action }: { action: SuggestedAction }) {
+function ActionPill({
+  action,
+  onClick,
+}: {
+  action: SuggestedAction;
+  onClick?: (a: SuggestedAction) => void;
+}) {
+  const handlerClass = onClick
+    ? "cursor-pointer hover:bg-[var(--accent)]/20"
+    : "cursor-default";
   return (
-    <span
+    <button
+      type="button"
       title={action.description}
-      className="inline-flex items-center gap-1.5 rounded-md border border-[var(--accent-soft)]/40 bg-[var(--accent)]/10 px-2.5 py-1 text-xs text-[var(--accent-soft)]"
+      onClick={() => onClick?.(action)}
+      disabled={!onClick}
+      className={`inline-flex items-center gap-1.5 rounded-md border border-[var(--accent-soft)]/40 bg-[var(--accent)]/10 px-2.5 py-1 text-xs text-[var(--accent-soft)] transition ${handlerClass}`}
     >
       <span className="h-1 w-1 rounded-full bg-[var(--accent-soft)]" />
       {action.label}
-    </span>
+    </button>
   );
 }

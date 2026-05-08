@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     )
 
     github_token: str | None = None
+    github_write_owner: str | None = None
     openai_api_key: str | None = None
     cors_origins: list[str] = ["http://localhost:3000"]
 
