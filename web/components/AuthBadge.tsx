@@ -1,8 +1,11 @@
 "use client";
 
-import { SignInButton, UserButton, useAuth } from "@clerk/nextjs";
+import { useState } from "react";
+
+import { UserButton, useAuth, useClerk, useUser } from "@clerk/nextjs";
 
 const ENABLED = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+const SIGN_IN_LABEL = "Sign in with GitHub";
 
 export function AuthBadge() {
   if (!ENABLED) {
@@ -20,31 +23,94 @@ export function AuthBadge() {
 
 function Inner() {
   const { isLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
   if (!isLoaded) {
     return (
       <span className="h-7 w-7 animate-pulse rounded-full bg-[var(--muted)]" />
     );
   }
   if (isSignedIn) {
+    const github = user?.externalAccounts?.find(
+      (account) => account.provider === "github",
+    );
+    const label = github?.username ? `@${github.username}` : "Signed in";
     return (
-      <UserButton
-        appearance={{
-          elements: {
-            avatarBox: "w-7 h-7 rounded-full ring-1 ring-[var(--border)]",
-          },
-        }}
-      />
+      <div className="inline-flex items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--muted)] px-2 py-1">
+        <span className="max-w-28 truncate text-xs text-neutral-300">
+          {label}
+        </span>
+        <UserButton
+          appearance={{
+            elements: {
+              avatarBox: "w-6 h-6 rounded-full ring-1 ring-[var(--border)]",
+            },
+          }}
+        />
+      </div>
     );
   }
-  return (
-    <SignInButton mode="modal" oauthFlow="redirect">
-      <button
-        type="button"
-        className="rounded-md border border-[var(--border)] bg-[var(--muted)] px-2.5 py-1 text-xs text-neutral-300 transition hover:border-[var(--accent-soft)] hover:text-[var(--accent-soft)]"
+  return <ClerkGitHubSignInButton />;
+}
+
+export function ClerkGitHubSignInButton({
+  className,
+}: {
+  className?: string;
+}) {
+  if (!ENABLED) {
+    return (
+      <a
+        href="https://github.com/Abby263/ai-portfolio-agent/blob/main/SETUP.md#clerk-auth"
+        target="_blank"
+        rel="noreferrer"
+        className={
+          className ??
+          "rounded-md border border-[var(--border)] bg-[var(--muted)] px-2.5 py-1 text-xs text-neutral-500"
+        }
       >
-        Sign in with GitHub
-      </button>
-    </SignInButton>
+        Configure Clerk
+      </a>
+    );
+  }
+  return <GitHubOAuthButton className={className} />;
+}
+
+function GitHubOAuthButton({ className }: { className?: string }) {
+  const clerk = useClerk();
+  const signIn = clerk.client?.signIn;
+  const [error, setError] = useState<string | null>(null);
+
+  async function startGitHubSignIn() {
+    if (!signIn) return;
+    setError(null);
+    const currentPath =
+      window.location.pathname === "/sso-callback"
+        ? "/"
+        : `${window.location.pathname}${window.location.search}`;
+    try {
+      await signIn.authenticateWithRedirect({
+        strategy: "oauth_github",
+        redirectUrl: "/sso-callback",
+        redirectUrlComplete: currentPath,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "GitHub sign-in failed");
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={startGitHubSignIn}
+      disabled={!signIn}
+      title={error ?? SIGN_IN_LABEL}
+      className={
+        className ??
+        "rounded-md border border-[var(--border)] bg-[var(--muted)] px-2.5 py-1 text-xs text-neutral-300 transition hover:border-[var(--accent-soft)] hover:text-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+      }
+    >
+      {SIGN_IN_LABEL}
+    </button>
   );
 }
 
@@ -59,17 +125,7 @@ export function PublicSignInLink({
     "rounded-md border border-[var(--border)] bg-[var(--muted)] px-3 py-1.5 text-xs text-neutral-400 transition hover:border-[var(--accent-soft)] hover:text-[var(--accent-soft)]";
 
   if (!ENABLED) {
-    return (
-      <a
-        href="https://github.com/Abby263/ai-portfolio-agent/blob/main/SETUP.md#clerk-auth"
-        target="_blank"
-        rel="noreferrer"
-        className={fallbackClass}
-        title="Clerk auth is not configured on this server"
-      >
-        Configure Clerk
-      </a>
-    );
+    return <ClerkGitHubSignInButton className={fallbackClass} />;
   }
   return <PublicInner className={className} />;
 }
@@ -77,17 +133,5 @@ export function PublicSignInLink({
 function PublicInner({ className }: { className?: string }) {
   const { isLoaded, isSignedIn } = useAuth();
   if (!isLoaded || isSignedIn) return null;
-  return (
-    <SignInButton mode="modal" oauthFlow="redirect">
-      <button
-        type="button"
-        className={
-          className ??
-          "rounded-md border border-[var(--accent-soft)]/40 bg-[var(--accent)]/10 px-3 py-1.5 text-xs text-[var(--accent-soft)] transition hover:bg-[var(--accent)]/20"
-        }
-      >
-        Sign in with GitHub
-      </button>
-    </SignInButton>
-  );
+  return <ClerkGitHubSignInButton className={className} />;
 }

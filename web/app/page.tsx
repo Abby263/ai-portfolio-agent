@@ -3,6 +3,11 @@ import { redirect } from "next/navigation";
 
 import { AuthBadge } from "@/components/AuthBadge";
 import { BuildButton } from "@/components/BuildButton";
+import {
+  PortfolioNavLink,
+  SignedUserPortfolioPanel,
+  SignedUserSources,
+} from "@/components/LandingUserPanels";
 
 async function goToProfile(formData: FormData) {
   "use server";
@@ -49,29 +54,6 @@ const CAPABILITIES = [
   },
 ];
 
-const SOURCE_ROWS = [
-  ["GitHub", "Live", "Public repos, languages, stars, topics, profile links"],
-  ["Resume upload", "Live", "PDF, DOCX, Markdown, and plain-text extraction"],
-  ["Vercel token", "Live", "Per-user token entered in the profile UI"],
-  ["Clerk GitHub auth", "Live", "Identifies the GitHub owner before saving sources"],
-  ["LinkedIn / Instagram", "Planned", "Future social and content connectors"],
-];
-
-const PROJECTS = [
-  {
-    name: "ai-portfolio-agent",
-    root: "web/",
-    runtime: "Next.js",
-    env: "NEXT_PUBLIC_API_URL, NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY",
-  },
-  {
-    name: "ai-portfolio-agent-api",
-    root: "api/",
-    runtime: "FastAPI",
-    env: "OPENAI_API_KEY, GITHUB_TOKEN, GITHUB_WRITE_OWNER, CORS_ORIGINS, KV_*, CLERK_*",
-  },
-];
-
 const DEMOS = ["torvalds", "gaearon", "tj", "sindresorhus"];
 
 export default function Home() {
@@ -90,9 +72,7 @@ export default function Home() {
             <a href="#sources" className="transition hover:text-neutral-100">
               Sources
             </a>
-            <a href="#deploy" className="transition hover:text-neutral-100">
-              Deploy
-            </a>
+            <PortfolioNavLink className="transition hover:text-neutral-100" />
             <a
               href="https://github.com/Abby263/ai-portfolio-agent"
               target="_blank"
@@ -226,8 +206,8 @@ export default function Home() {
                   Connected sources
                 </h2>
                 <p className="mt-2 max-w-2xl text-3xl font-semibold leading-tight">
-                  GitHub is public. Resume and Vercel controls unlock for the
-                  signed-in GitHub owner.
+                  Sign in with Clerk GitHub auth to see the source connections
+                  made for your account.
                 </p>
               </div>
               <a
@@ -240,64 +220,31 @@ export default function Home() {
               </a>
             </div>
 
-            <div className="mt-8 overflow-hidden rounded-lg border border-[var(--border)]">
-              {SOURCE_ROWS.map(([name, state, detail]) => (
-                <div
-                  key={name}
-                  className="grid gap-3 border-b border-[var(--border)] bg-[var(--muted)] p-4 last:border-b-0 md:grid-cols-[180px_110px_1fr]"
-                >
-                  <div className="font-medium text-neutral-100">{name}</div>
-                  <div>
-                    <StateChip state={state} />
-                  </div>
-                  <p className="text-sm text-neutral-400">{detail}</p>
-                </div>
-              ))}
+            <div className="mt-8">
+              <SignedUserSources />
             </div>
           </div>
         </section>
 
-        <section id="deploy" className="border-b border-[var(--border)]/70">
+        <section id="portfolio" className="border-b border-[var(--border)]/70">
           <div className="mx-auto max-w-6xl px-6 py-16">
             <div className="max-w-3xl">
               <h2 className="text-sm font-semibold text-[var(--accent-soft)]">
-                Vercel project split
+                Portfolio
               </h2>
               <p className="mt-2 text-3xl font-semibold leading-tight">
-                Deploy the same GitHub repo twice: once from <code>web/</code>,
-                once from <code>api/</code>.
+                Open the portfolio page for the GitHub user signed in through
+                Clerk.
               </p>
               <p className="mt-3 text-sm leading-6 text-neutral-400">
-                The setup guide now calls out where Clerk, GitHub, Vercel KV,
-                and API URL variables belong. Putting Clerk keys only on the
-                API project will not render web sign-in.
+                The setup details live in the setup guide. The landing page
+                focuses on the working product: sign in, view your source
+                connections, then open your portfolio.
               </p>
             </div>
 
-            <div className="mt-8 grid gap-4 lg:grid-cols-2">
-              {PROJECTS.map((project) => (
-                <article
-                  key={project.name}
-                  className="rounded-lg border border-[var(--border)] bg-[var(--muted)] p-5"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-neutral-100">
-                        {project.name}
-                      </h3>
-                      <p className="mt-1 text-sm text-neutral-500">
-                        Root directory: <code>{project.root}</code>
-                      </p>
-                    </div>
-                    <span className="rounded-md border border-[var(--border)] px-2 py-1 text-xs text-neutral-400">
-                      {project.runtime}
-                    </span>
-                  </div>
-                  <p className="mt-4 break-words font-mono text-xs leading-6 text-neutral-300">
-                    {project.env}
-                  </p>
-                </article>
-              ))}
+            <div className="mt-8">
+              <SignedUserPortfolioPanel />
             </div>
           </div>
         </section>
@@ -317,21 +264,5 @@ export default function Home() {
         </div>
       </footer>
     </div>
-  );
-}
-
-function StateChip({ state }: { state: string }) {
-  const isLive = state.toLowerCase().includes("live");
-  return (
-    <span
-      className={
-        "inline-flex rounded-md px-2 py-0.5 text-[10px] uppercase " +
-        (isLive
-          ? "border border-emerald-700/40 bg-emerald-950/40 text-emerald-300"
-          : "border border-[var(--border)] bg-[var(--background)] text-neutral-500")
-      }
-    >
-      {state}
-    </span>
   );
 }
