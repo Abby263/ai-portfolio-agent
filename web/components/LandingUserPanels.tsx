@@ -26,7 +26,7 @@ export function PortfolioNavLink({
 }) {
   if (!CLERK_ENABLED) {
     return (
-      <a href="#portfolio" className={className}>
+      <a href="#sources" className={className}>
         Portfolio
       </a>
     );
@@ -37,7 +37,7 @@ export function PortfolioNavLink({
 function PortfolioNavLinkInner({ className }: { className?: string }) {
   const { isLoaded, user } = useUser();
   const username = getGitHubUsername(user);
-  const href = isLoaded && username ? `/${username}` : "#portfolio";
+  const href = isLoaded && username ? `/${username}` : "#sources";
   return (
     <Link href={href} className={className}>
       Portfolio
@@ -183,11 +183,6 @@ function SignedUserSourcesInner() {
 
   const rows = [
     {
-      name: "Clerk GitHub auth",
-      connected: true,
-      detail: `Signed in as @${username}`,
-    },
-    {
       name: "GitHub profile",
       connected: Boolean(profile),
       detail: profile
@@ -214,17 +209,7 @@ function SignedUserSourcesInner() {
   ];
 
   return (
-    <PanelShell
-      title={`Source connections for @${username}`}
-      action={
-        <Link
-          href={`/${username}`}
-          className="rounded-md border border-[var(--accent-soft)]/40 bg-[var(--accent)]/10 px-3 py-1.5 text-xs text-[var(--accent-soft)] transition hover:bg-[var(--accent)]/20"
-        >
-          Open portfolio
-        </Link>
-      }
-    >
+    <PanelShell title={`Source connections for @${username}`}>
       <div className="grid gap-3 md:grid-cols-2">
         {rows.map((row) => (
           <ConnectionRow key={row.name} {...row} />
@@ -278,84 +263,15 @@ function SignedUserSourcesInner() {
           ? `${sourceCount} source records are currently attached to this profile.`
           : "Profile source records are still loading."}
       </p>
-      {error ? <p className="mt-3 text-xs text-red-400">{error}</p> : null}
-    </PanelShell>
-  );
-}
-
-export function SignedUserPortfolioPanel() {
-  if (!CLERK_ENABLED) {
-    return (
-      <PanelShell
-        title="Portfolio opens after Clerk is configured"
-        action={<ClerkGitHubSignInButton />}
-      >
-        <p className="text-sm leading-6 text-neutral-400">
-          The Portfolio link uses the signed-in GitHub account. Configure Clerk
-          on the web project, redeploy, then sign in.
-        </p>
-      </PanelShell>
-    );
-  }
-  return <SignedUserPortfolioPanelInner />;
-}
-
-function SignedUserPortfolioPanelInner() {
-  const { isLoaded, isSignedIn, user } = useUser();
-  const username = getGitHubUsername(user);
-
-  if (!isLoaded) {
-    return (
-      <PanelShell title="Checking signed-in portfolio">
-        <SkeletonRow />
-      </PanelShell>
-    );
-  }
-
-  if (!isSignedIn) {
-    return (
-      <PanelShell
-        title="Open your portfolio"
-        action={
-          <ClerkGitHubSignInButton className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-soft)]" />
-        }
-      >
-        <p className="text-sm leading-6 text-neutral-400">
-          Sign in with GitHub and the Portfolio link will open the public page
-          for that GitHub username.
-        </p>
-      </PanelShell>
-    );
-  }
-
-  if (!username) {
-    return (
-      <PanelShell title="No GitHub username found">
-        <p className="text-sm leading-6 text-neutral-400">
-          This Clerk user is signed in, but no GitHub social account is attached.
-          Use GitHub sign-in to open the matching portfolio page.
-        </p>
-      </PanelShell>
-    );
-  }
-
-  return (
-    <PanelShell
-      title={`Portfolio for @${username}`}
-      action={
+      <div className="mt-4">
         <Link
           href={`/${username}`}
-          className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-soft)]"
+          className="inline-flex rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-soft)]"
         >
           Open portfolio
         </Link>
-      }
-    >
-      <p className="text-sm leading-6 text-neutral-400">
-        This opens the public portfolio page for the GitHub user signed in
-        through Clerk. Owner tools unlock on that page when the signed-in GitHub
-        username matches the URL.
-      </p>
+      </div>
+      {error ? <p className="mt-3 text-xs text-red-400">{error}</p> : null}
     </PanelShell>
   );
 }

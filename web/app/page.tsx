@@ -5,7 +5,6 @@ import { AuthBadge } from "@/components/AuthBadge";
 import { BuildButton } from "@/components/BuildButton";
 import {
   PortfolioNavLink,
-  SignedUserPortfolioPanel,
   SignedUserSources,
 } from "@/components/LandingUserPanels";
 
@@ -159,8 +158,8 @@ export default function Home() {
                   Connected sources
                 </h2>
                 <p className="mt-2 max-w-2xl text-3xl font-semibold leading-tight">
-                  Sign in with Clerk GitHub auth to see the source connections
-                  made for your account.
+                  Sign in with GitHub to see the source connections made for
+                  your account.
                 </p>
               </div>
               <a
@@ -175,29 +174,6 @@ export default function Home() {
 
             <div className="mt-8">
               <SignedUserSources />
-            </div>
-          </div>
-        </section>
-
-        <section id="portfolio" className="border-b border-[var(--border)]/70">
-          <div className="mx-auto max-w-6xl px-6 py-16">
-            <div className="max-w-3xl">
-              <h2 className="text-sm font-semibold text-[var(--accent-soft)]">
-                Portfolio
-              </h2>
-              <p className="mt-2 text-3xl font-semibold leading-tight">
-                Open the portfolio page for the GitHub user signed in through
-                Clerk.
-              </p>
-              <p className="mt-3 text-sm leading-6 text-neutral-400">
-                The setup details live in the setup guide. The landing page
-                focuses on the working product: sign in, view your source
-                connections, then open your portfolio.
-              </p>
-            </div>
-
-            <div className="mt-8">
-              <SignedUserPortfolioPanel />
             </div>
           </div>
         </section>
