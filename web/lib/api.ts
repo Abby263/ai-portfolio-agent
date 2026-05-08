@@ -114,3 +114,61 @@ export async function runCommand(
   }
   return res.json();
 }
+
+export type DraftReadmeResponse = {
+  owner: string;
+  repo: string;
+  default_branch: string;
+  file_path: string;
+  current: string | null;
+  current_sha: string | null;
+  proposed: string;
+  summary: string;
+};
+
+export async function draftReadme(
+  owner: string,
+  repo: string,
+): Promise<DraftReadmeResponse> {
+  const res = await fetch(`${API_URL}/api/actions/draft-readme`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ owner, repo }),
+  });
+  if (!res.ok) {
+    throw new Error(`Draft failed (${res.status}): ${await res.text()}`);
+  }
+  return res.json();
+}
+
+export type CreatePrResponse = {
+  pr_url: string;
+  pr_number: number;
+  branch: string;
+};
+
+export type CreatePrInput = {
+  owner: string;
+  repo: string;
+  branch: string;
+  file_path: string;
+  content: string;
+  sha: string | null;
+  commit_message: string;
+  pr_title: string;
+  pr_body: string;
+  base?: string;
+};
+
+export async function createPr(input: CreatePrInput): Promise<CreatePrResponse> {
+  const res = await fetch(`${API_URL}/api/actions/create-pr`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const detail = await res.text();
+    throw new Error(`PR creation failed (${res.status}): ${detail}`);
+  }
+  return res.json();
+}

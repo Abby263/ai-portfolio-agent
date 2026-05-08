@@ -7,12 +7,26 @@ import { EducationList } from "@/components/EducationList";
 import { ExperienceList } from "@/components/ExperienceList";
 import { ProfileHero } from "@/components/ProfileHero";
 import { ProjectCard } from "@/components/ProjectCard";
+import { ReadmeWriter } from "@/components/ReadmeWriter";
 import { ResumeEnhancer } from "@/components/ResumeEnhancer";
 import { SkillCloud } from "@/components/SkillCloud";
-import type { Profile } from "@/lib/api";
+import type { Profile, SuggestedAction } from "@/lib/api";
 
 export function ProfileView({ initial }: { initial: Profile }) {
   const [profile, setProfile] = useState(initial);
+  const [activeAction, setActiveAction] = useState<SuggestedAction | null>(null);
+
+  function handleAction(action: SuggestedAction) {
+    if (action.kind === "readme_update") {
+      setActiveAction(action);
+      return;
+    }
+    setActiveAction({
+      ...action,
+      description:
+        action.description + " (this action isn't wired up yet — coming soon).",
+    });
+  }
   return (
     <>
       <ProfileHero profile={profile} />
@@ -28,8 +42,17 @@ export function ProfileView({ initial }: { initial: Profile }) {
       </div>
 
       <div className="mt-8">
-        <CommandBar profile={profile} />
+        <CommandBar profile={profile} onAction={handleAction} />
       </div>
+
+      {activeAction?.kind === "readme_update" ? (
+        <div className="mt-4">
+          <ReadmeWriter
+            profile={profile}
+            onClose={() => setActiveAction(null)}
+          />
+        </div>
+      ) : null}
 
       {profile.themes.length > 0 ? (
         <div className="mt-6 flex flex-wrap gap-2">
