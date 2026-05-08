@@ -16,8 +16,8 @@ type Turn = {
 
 const SUGGESTED_PROMPTS = [
   "What are my strongest projects?",
-  "What languages do I use most?",
-  "Write me a one-line tagline",
+  "Summarize my resume experience",
+  "What tech stack do I use most?",
   "Update READMEs across my repos",
 ];
 
@@ -65,7 +65,7 @@ export function CommandBar({
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Ask anything about this profile, or give an instruction..."
+          placeholder="Ask about projects, resume, tech stack, or work history..."
           className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm outline-none placeholder:text-neutral-500 focus:border-[var(--accent-soft)]"
         />
         <button

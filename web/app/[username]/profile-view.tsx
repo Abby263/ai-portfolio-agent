@@ -11,7 +11,12 @@ import { SideChat } from "@/components/SideChat";
 import { SkillCloud } from "@/components/SkillCloud";
 import { Sources } from "@/components/Sources";
 import { StatsStrip } from "@/components/StatsStrip";
-import type { Experience, Profile, SuggestedAction } from "@/lib/api";
+import {
+  resumeUrl,
+  type Experience,
+  type Profile,
+  type SuggestedAction,
+} from "@/lib/api";
 
 type AuthState = {
   clerkReady: boolean;
@@ -82,8 +87,8 @@ export function ProfileView({
               Chat with this portfolio
             </p>
             <p className="text-xs text-neutral-400">
-              Ask about projects, experience, or anything else — answers are
-              grounded in everything below.
+              Ask about projects, experience, tech stack, and the embedded
+              resume.
             </p>
           </div>
         </div>
@@ -102,10 +107,7 @@ export function ProfileView({
         </div>
       ) : null}
 
-      <CareerSnapshot
-        profile={profile}
-        professionalExperiences={professionalExperiences}
-      />
+      <CareerSnapshot profile={profile} />
 
       {profile.story ? (
         <section className="mt-14 grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
@@ -260,8 +262,6 @@ export function ProfileView({
 }
 
 const BULLET_PREFIX_RE = /^[\-*•·●○◦▪▫‣∙]\s*/;
-const RESUME_STOP_RE =
-  /\b(skills?|technical skills|programming languages?|experience|professional experience|education)\b/i;
 const GENERIC_STANDALONE_ROLES = new Set([
   "analyst",
   "consultant",
@@ -289,26 +289,6 @@ function cleanResumeText(value: string) {
     .replace(/^[\s:;.,-]+|[\s:;.,-]+$/g, "");
   const leadIndex = cleaned.search(RESUME_LEAD_RE);
   return leadIndex > 0 ? cleaned.slice(leadIndex).trim() : cleaned;
-}
-
-function extractResumeHighlights(summary: string | null) {
-  if (!summary) return [];
-  const normalized = summary
-    .replace(/[—–-]{3,}/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  const splitOnBullets = normalized.split(/[●•○◦▪▫‣∙]\s*/);
-  const pieces =
-    splitOnBullets.length > 1
-      ? splitOnBullets
-      : normalized.split(/(?<=[.!?])\s+/);
-
-  return pieces
-    .map((item) => item.split(RESUME_STOP_RE, 1)[0])
-    .map(cleanResumeText)
-    .filter((item) => item.length >= 36)
-    .filter((item) => !/\b(?:and|or|to|for|with|into|of|in|at)$/i.test(item))
-    .slice(0, 5);
 }
 
 function cleanExperienceValue(value: string | null) {
@@ -371,37 +351,21 @@ function getProfessionalExperiences(experiences: Experience[]) {
     }));
 }
 
-function formatRange(experience: Experience) {
-  if (!experience.start && !experience.end) return null;
-  return `${experience.start ?? ""}${
-    experience.start || experience.end ? " - " : ""
-  }${experience.end ?? "present"}`;
-}
-
-function CareerSnapshot({
-  profile,
-  professionalExperiences,
-}: {
-  profile: Profile;
-  professionalExperiences: Experience[];
-}) {
+function CareerSnapshot({ profile }: { profile: Profile }) {
   const resumeConnected = profile.sources.some(
     (source) => source.connector === "resume",
   );
-  const resumeHighlights = extractResumeHighlights(profile.resume_summary);
   const hasResumeData =
+    profile.resume_file_available ||
     resumeConnected ||
-    resumeHighlights.length > 0 ||
-    professionalExperiences.length > 0 ||
+    profile.experiences.length > 0 ||
     profile.education.length > 0;
   if (!hasResumeData) return null;
 
-  const lead =
-    resumeHighlights[0] ??
-    (profile.resume_summary ? cleanResumeText(profile.resume_summary) : null) ??
-    "Resume details are connected and reflected in this portfolio.";
-  const supportHighlights = resumeHighlights.slice(1, 4);
-  const topExperience = professionalExperiences.slice(0, 3);
+  const canEmbedResumePdf =
+    Boolean(profile.resume_file_available) &&
+    (!profile.resume_file_content_type ||
+      profile.resume_file_content_type.includes("pdf"));
   const topSkills = profile.skills.slice(0, 8);
 
   return (
@@ -413,90 +377,61 @@ function CareerSnapshot({
               Resume-backed profile
             </p>
             <h2 className="mt-3 max-w-2xl text-2xl font-semibold text-neutral-100 md:text-3xl">
-              Professional background behind the work.
+              Read the uploaded resume without leaving this page.
             </h2>
           </div>
           <span className="w-fit rounded-md border border-[var(--accent-soft)]/30 bg-[var(--background)]/70 px-3 py-1 text-xs text-[var(--accent-soft)]">
-            {resumeConnected ? "Resume connected" : "Resume inferred"}
+            {canEmbedResumePdf
+              ? "PDF embedded"
+              : profile.resume_file_available
+                ? "Resume file connected"
+                : "Resume inferred"}
           </span>
         </div>
       </div>
 
       <div className="grid gap-px bg-[var(--border)] lg:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="bg-[var(--background)] p-6 md:p-7">
-          <p className="text-xs uppercase text-neutral-500">
-            Professional profile
-          </p>
-          <p className="mt-3 text-balance text-lg leading-8 text-neutral-200">
-            {lead}
-          </p>
-
-          {supportHighlights.length > 0 ? (
-            <div className="mt-6">
-              <p className="text-xs uppercase text-neutral-500">
-                Resume highlights
-              </p>
-              <ul className="mt-3 grid gap-3 text-sm leading-6 text-neutral-300 md:grid-cols-2">
-                {supportHighlights.map((highlight) => (
-                  <li
-                    key={highlight}
-                    className="rounded-lg border border-[var(--border)] bg-[var(--muted)]/70 p-4"
-                  >
-                    {highlight}
-                  </li>
-                ))}
-              </ul>
+        <div className="bg-[var(--background)] p-3 md:p-5">
+          {canEmbedResumePdf ? (
+            <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-white">
+              <iframe
+                title={`${profile.display_name ?? profile.username} resume PDF`}
+                src={`${resumeUrl(profile.username)}#toolbar=1&navpanes=0&view=FitH`}
+                className="h-[72vh] min-h-[620px] w-full bg-white"
+              />
             </div>
-          ) : null}
-
-          {topExperience.length > 0 ? (
-            <div className="mt-7">
-              <p className="text-xs uppercase text-neutral-500">
-                Experience signal
+          ) : (
+            <div className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--muted)] p-6">
+              <p className="text-sm font-medium text-neutral-100">
+                {profile.resume_file_available
+                  ? "Resume file is connected, but it is not a PDF."
+                  : "Resume PDF is not embedded yet."}
               </p>
-              <div className="mt-3 grid gap-3">
-                {topExperience.map((experience, index) => (
-                  <div
-                    key={`${experience.company}-${experience.role}-${index}`}
-                    className="rounded-lg border border-[var(--border)] bg-[var(--muted)]/70 p-4"
-                  >
-                    <div className="flex flex-wrap items-baseline justify-between gap-3">
-                      <h3 className="text-sm font-medium text-neutral-100">
-                        {experience.role || "Role"}
-                        {experience.company ? (
-                          <span className="ml-2 font-normal text-neutral-400">
-                            at {experience.company}
-                          </span>
-                        ) : null}
-                      </h3>
-                      {formatRange(experience) ? (
-                        <span className="font-mono text-[11px] text-neutral-500">
-                          {formatRange(experience)}
-                        </span>
-                      ) : null}
-                    </div>
-                    {experience.summary ? (
-                      <p className="mt-2 text-sm leading-6 text-neutral-300">
-                        {experience.summary}
-                      </p>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
+              <p className="mt-2 text-sm leading-6 text-neutral-400">
+                Upload a PDF resume from Sources to show a scrollable document
+                viewer here. Parsed resume details still feed the experience,
+                education, and portfolio chat context.
+              </p>
             </div>
-          ) : null}
+          )}
         </div>
 
         <aside className="bg-[var(--muted)] p-6 md:p-7">
           <div className="grid gap-3">
             <ResumeMetric
-              label="Highlights"
-              value={String(Math.max(resumeHighlights.length, 1))}
+              label="Resume file"
+              value={
+                canEmbedResumePdf
+                  ? "PDF"
+                  : profile.resume_file_available
+                    ? "File"
+                    : "Pending"
+              }
             />
-            {professionalExperiences.length > 0 ? (
+            {profile.experiences.length > 0 ? (
               <ResumeMetric
-                label="Role signals"
-                value={String(professionalExperiences.length)}
+                label="Roles"
+                value={String(profile.experiences.length)}
               />
             ) : null}
             {profile.education.length > 0 ? (

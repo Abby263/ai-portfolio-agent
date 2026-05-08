@@ -75,7 +75,8 @@ export function SideChat({
               Ask about {profile.display_name ?? profile.username}'s work
             </h2>
             <p className="mt-1 line-clamp-2 text-xs text-neutral-500">
-              Grounded in projects, story, skills, and experience on this page.
+              Grounded in projects, deployed apps, skills, experience, and the
+              uploaded resume.
             </p>
           </div>
           <button

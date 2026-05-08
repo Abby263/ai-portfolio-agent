@@ -5,24 +5,39 @@ import { PortfolioNavLink } from "@/components/LandingUserPanels";
 
 const PIPELINE = [
   {
-    label: "GitHub",
-    detail: "Fetch repos, languages, topics, stars, and profile metadata.",
+    label: "Connect",
+    detail: "Pull GitHub projects, deployed app links, and resume-backed career data.",
   },
   {
-    label: "Resume",
-    detail: "Upload PDF, DOCX, Markdown, or paste text for skills and roles.",
+    label: "Generate",
+    detail: "Build a public developer portfolio from repos, pinned work, and experience.",
   },
   {
-    label: "Live apps",
-    detail: "Use repo Website URLs for deployed projects.",
+    label: "Share",
+    detail: "Send one link recruiters and collaborators can explore without a walkthrough.",
   },
   {
-    label: "Portfolio",
-    detail: "Render a public page for the signed-in GitHub account.",
+    label: "Chat",
+    detail: "Let visitors ask about projects, work history, tech stack, and resume details.",
   },
   {
-    label: "Actions",
-    detail: "Draft READMEs and open PRs only after owner review.",
+    label: "Act",
+    detail: "Use owner-only actions for README refreshes and repo follow-up work.",
+  },
+];
+
+const CHAT_EXAMPLES = [
+  {
+    speaker: "Recruiter",
+    text: "Which projects show production React and backend work?",
+  },
+  {
+    speaker: "Portfolio",
+    text: "The assistant compares pinned repos, deployed app links, languages, and resume experience.",
+  },
+  {
+    speaker: "Developer",
+    text: "Ask your own portfolio what changed across projects before interviews or README updates.",
   },
 ];
 
@@ -58,15 +73,22 @@ export default function Home() {
           <div className="mx-auto grid max-w-6xl gap-10 px-6 py-10 lg:grid-cols-[minmax(0,1fr)_420px] lg:py-12">
             <div>
               <p className="mb-3 text-sm font-medium text-[var(--accent-soft)]">
-                Portfolio builder plus repo action agent
+                Shareable portfolio with a built-in project assistant
               </p>
               <h1 className="max-w-3xl text-5xl font-semibold leading-[1.05] md:text-6xl">
-                AI Developer Portfolio Manager Agent
+                Turn your GitHub and resume into a portfolio people can chat with.
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-neutral-300 md:text-lg">
-                Connect with GitHub, add your resume on the Sources page, and
-                generate a portfolio that presents your professional story,
-                pinned repositories, and deployed web apps in one place.
+                AI Developer Portfolio Manager Agent creates a public page for
+                your strongest work, then lets visitors ask informed questions
+                about your projects, deployed apps, tech stack, career history,
+                education, and resume details.
+              </p>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-neutral-400">
+                Recruiters can quickly understand how your experience maps to a
+                role. Developers can use the same chat to revisit their own
+                repos, explain architectural choices, and prepare for portfolio
+                reviews without digging through every README manually.
               </p>
 
               <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -82,20 +104,35 @@ export default function Home() {
                 />
               </div>
               <div className="mt-5 max-w-xl rounded-lg border border-[var(--border)] bg-[var(--muted)] p-4 text-sm leading-6 text-neutral-400">
-                GitHub identity comes from Clerk sign-in and the Sources page,
-                so portfolio ownership is tied to the connected account rather
-                than a typed username.
+                The portfolio chat is grounded in connected GitHub metadata,
+                deployed app URLs, saved resume text, parsed roles, education,
+                skills, and contact links.
               </div>
             </div>
 
             <aside className="rounded-lg border border-[var(--border)] bg-[var(--muted)] p-5">
               <div className="flex items-center justify-between gap-4">
                 <h2 className="text-sm font-semibold text-neutral-100">
-                  Agent pipeline
+                  Portfolio conversation
                 </h2>
                 <span className="rounded-md border border-emerald-700/40 bg-emerald-950/40 px-2 py-0.5 text-[10px] text-emerald-300">
-                  Live slice
+                  Live context
                 </span>
+              </div>
+              <div className="mt-5 space-y-3">
+                {CHAT_EXAMPLES.map((item) => (
+                  <div
+                    key={item.speaker}
+                    className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-3"
+                  >
+                    <p className="text-[10px] uppercase text-[var(--accent-soft)]">
+                      {item.speaker}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-neutral-300">
+                      {item.text}
+                    </p>
+                  </div>
+                ))}
               </div>
               <ol className="mt-5 space-y-4">
                 {PIPELINE.map((item, index) => (
@@ -122,38 +159,40 @@ export default function Home() {
           <div className="mx-auto grid max-w-6xl gap-6 px-6 py-14 md:grid-cols-3">
             <div className="rounded-lg border border-[var(--border)] bg-[var(--muted)] p-5">
               <p className="text-xs uppercase text-neutral-500">
-                Portfolio cache
+                Shareable portfolio
               </p>
               <p className="mt-3 text-xl font-semibold text-neutral-100">
-                Fast after first build
+                One link for the whole story
               </p>
               <p className="mt-2 text-sm leading-6 text-neutral-400">
-                The generated portfolio is saved so repeat visits do not
-                rebuild unless the owner updates sources.
+                Visitors see pinned projects, live app links, professional
+                history, education, skills, and contact details in one public
+                portfolio.
               </p>
             </div>
             <div className="rounded-lg border border-[var(--border)] bg-[var(--muted)] p-5">
               <p className="text-xs uppercase text-neutral-500">
-                Resume-aware
+                Recruiter research
               </p>
               <p className="mt-3 text-xl font-semibold text-neutral-100">
-                Professional work matters
+                Ask before the screen
               </p>
               <p className="mt-2 text-sm leading-6 text-neutral-400">
-                Uploaded resumes add roles, education, contact details, and
-                career context to the public page.
+                Recruiters can ask about work experience, role fit, tech stack,
+                deployed projects, and resume details without switching tabs.
               </p>
             </div>
             <div className="rounded-lg border border-[var(--border)] bg-[var(--muted)] p-5">
               <p className="text-xs uppercase text-neutral-500">
-                Deployed apps
+                Developer cockpit
               </p>
               <p className="mt-3 text-xl font-semibold text-neutral-100">
-                Pinned repos first
+                Talk to your own work
               </p>
               <p className="mt-2 text-sm leading-6 text-neutral-400">
-                GitHub pinned repositories and repo Website URLs drive the
-                project gallery.
+                Use the same portfolio chat to revisit repo context, summarize
+                your resume, prepare interviews, and queue owner-reviewed repo
+                actions.
               </p>
             </div>
           </div>

@@ -10,7 +10,7 @@ const CLERK_ENABLED = Boolean(
 export const metadata: Metadata = {
   title: "AI Developer Portfolio Manager Agent",
   description:
-    "AI-powered developer portfolio that builds your story from GitHub, your resume, and more.",
+    "Share a developer portfolio recruiters can chat with across GitHub projects, deployed apps, resume experience, and tech stack.",
 };
 
 export default function RootLayout({
