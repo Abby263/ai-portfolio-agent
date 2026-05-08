@@ -40,3 +40,6 @@ api/data/
 
 # Claude Code local state
 .claude/
+
+# Vercel link metadata (per-project, contains project IDs)
+.vercel/
