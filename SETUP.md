@@ -74,6 +74,8 @@ The app runs at `http://localhost:3000`. Try `http://localhost:3000/torvalds`.
 | Variable | Required? | Purpose |
 |----------|-----------|---------|
 | `NEXT_PUBLIC_API_URL` | Yes | URL of the FastAPI backend, e.g. `https://ai-portfolio-agent-api.vercel.app`. Inlined at build time. |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Optional | Clerk publishable key. When set with `CLERK_SECRET_KEY`, sign-in becomes available; signed-in users whose GitHub login matches the URL username can edit that profile. Without these, the site stays public-read-only. |
+| `CLERK_SECRET_KEY` | Optional | Server-side Clerk secret. Pairs with the publishable key above. |
 
 ### Per-user secrets (handed in via the UI)
 
@@ -123,6 +125,21 @@ The token is needed for two things: lifting GitHub's rate limits on read calls (
 ### `GITHUB_WRITE_OWNER`
 
 This is just your GitHub username (e.g. `Abby263`). Set it as a string. It's the safety guardrail — the API server refuses PR creation against any other owner's repos, even if the token would technically allow it.
+
+### Clerk (auth)
+
+Clerk handles sign-in via GitHub OAuth and tells the server "this signed-in user is @abby263 on GitHub". The web app then unlocks the **Sources** card and write-side actions only on the matching `/abby263` profile.
+
+1. Sign up at <https://clerk.com> (free).
+2. Create a new application. Suggested name: `ai-portfolio-agent`.
+3. **Authentication → Social Connections → GitHub** → enable. Use Clerk's shared OAuth credentials for development; for production, click *Use custom credentials* and register your own GitHub OAuth app at <https://github.com/settings/developers> with the callback URL Clerk shows you.
+4. **API Keys** → copy:
+   - `Publishable key` → set as `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` on the **web** Vercel project (production scope).
+   - `Secret key` → set as `CLERK_SECRET_KEY` on the **web** Vercel project (production scope).
+5. **Domains** → add `https://ai-portfolio-agent.vercel.app` so Clerk allows callbacks there.
+6. Redeploy the web project. The "Sign in" button appears in the header; signing in with GitHub now unlocks edit mode on the matching profile URL.
+
+Without Clerk keys set, the site keeps working as a public read-only demo (the Sources card stays hidden for everyone).
 
 ### Vercel access token (per-user, UI-only)
 

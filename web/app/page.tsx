@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { AuthBadge } from "@/components/AuthBadge";
 import { BuildButton } from "@/components/BuildButton";
 
 async function goToProfile(formData: FormData) {
@@ -69,6 +70,7 @@ export default function Home() {
             >
               GitHub
             </a>
+            <AuthBadge />
           </nav>
         </div>
       </header>

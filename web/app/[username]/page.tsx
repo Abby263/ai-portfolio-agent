@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { AuthBadge } from "@/components/AuthBadge";
 import { fetchProfile } from "@/lib/api";
+import { CLERK_ENABLED, getSignedInGitHubUsername } from "@/lib/auth";
 
 import { ProfileView } from "./profile-view";
 
@@ -19,9 +21,13 @@ export default async function ProfilePage({
   const profile = await fetchProfile(username);
   if (!profile) notFound();
 
-  // Edit mode: temporary URL-param escape hatch until Clerk auth lands.
-  // The ProfileView only renders edit affordances when this is true.
-  const isEditMode = search?.edit === "1";
+  // Real ownership: signed-in user's GitHub login matches the URL.
+  // Fallback ?edit=1 escape hatch only when Clerk isn't configured at all.
+  const owner = await getSignedInGitHubUsername();
+  const isOwner =
+    owner !== null && owner === username.toLowerCase();
+  const fallbackEdit = !CLERK_ENABLED && search?.edit === "1";
+  const isEditMode = isOwner || fallbackEdit;
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
@@ -33,9 +39,12 @@ export default async function ProfilePage({
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
           ai-portfolio-agent
         </Link>
-        <span className="text-xs text-neutral-600">
-          /{profile.username}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-neutral-600">
+            /{profile.username}
+          </span>
+          <AuthBadge />
+        </div>
       </header>
 
       <ProfileView initial={profile} isEditMode={isEditMode} />
