@@ -262,14 +262,33 @@ export function ProfileView({
 const BULLET_PREFIX_RE = /^[\-*•·●○◦▪▫‣∙]\s*/;
 const RESUME_STOP_RE =
   /\b(skills?|technical skills|programming languages?|experience|professional experience|education)\b/i;
+const GENERIC_STANDALONE_ROLES = new Set([
+  "analyst",
+  "consultant",
+  "developer",
+  "engineer",
+  "engineering",
+  "lead",
+  "leader",
+  "manager",
+  "specialist",
+]);
+const RESUME_LEAD_RE =
+  /\b(experienced|proficient|expertise|skilled|led|built|designed|developed|architected|managed|implemented|acknowledged)\b/i;
 
 function cleanResumeText(value: string) {
-  return value
+  const cleaned = value
     .replace(/[—–-]{3,}/g, " ")
+    .replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, " ")
+    .replace(/https?:\/\/\S+|(?:www\.)?(?:linkedin|github)\.com\/\S+/gi, " ")
+    .replace(/\+?\d[\d\s().-]{7,}\d/g, " ")
+    .replace(/\|+/g, " ")
     .replace(/\b(HIGHLIGHTS?|SKILLS?|TECHNICAL SKILLS|PROGRAMMING LANGUAGES?)\b/gi, " ")
     .replace(/\s+/g, " ")
     .trim()
     .replace(/^[\s:;.,-]+|[\s:;.,-]+$/g, "");
+  const leadIndex = cleaned.search(RESUME_LEAD_RE);
+  return leadIndex > 0 ? cleaned.slice(leadIndex).trim() : cleaned;
 }
 
 function extractResumeHighlights(summary: string | null) {
@@ -319,6 +338,15 @@ function isLowConfidenceExperience(experience: Experience) {
   }
   if (
     role.toLowerCase() === "engineering" &&
+    !experience.start &&
+    !experience.end &&
+    !experience.summary &&
+    experience.highlights.length === 0
+  ) {
+    return true;
+  }
+  if (
+    GENERIC_STANDALONE_ROLES.has(role.toLowerCase()) &&
     !experience.start &&
     !experience.end &&
     !experience.summary &&

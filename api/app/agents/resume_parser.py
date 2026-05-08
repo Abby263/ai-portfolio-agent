@@ -59,6 +59,19 @@ SUMMARY_STOP_RE = re.compile(
     r"professional experience|education)\b",
     re.IGNORECASE,
 )
+SUMMARY_LEAD_RE = re.compile(
+    r"\b(?:experienced|proficient|expertise|skilled|led|built|designed|"
+    r"developed|architected|managed|implemented|acknowledged)\b",
+    re.IGNORECASE,
+)
+EMAIL_RE = re.compile(
+    r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"
+)
+PHONE_RE = re.compile(r"\+?\d[\d\s().-]{7,}\d")
+URL_RE = re.compile(
+    r"https?://\S+|(?:www\.)?(?:linkedin|github)\.com/\S+",
+    re.IGNORECASE,
+)
 DATE_RE = re.compile(
     r"\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|"
     r"january|february|march|april|june|july|august|september|october|"
@@ -162,8 +175,15 @@ def _strip_bullet(value: str) -> str:
 
 def _clean_summary_text(value: str) -> str:
     value = SECTION_RULE_RE.sub(" ", value)
+    value = EMAIL_RE.sub(" ", value)
+    value = PHONE_RE.sub(" ", value)
+    value = URL_RE.sub(" ", value)
+    value = re.sub(r"\|+", " ", value)
     value = SUMMARY_HEADER_RE.sub(" ", value)
     value = re.sub(r"\s+", " ", value).strip(" :-|•●○")
+    lead = SUMMARY_LEAD_RE.search(value)
+    if lead and lead.start() > 0:
+        value = value[lead.start() :].strip()
     return value
 
 
@@ -353,6 +373,9 @@ def _loose_experience_scan(text: str) -> list[Experience]:
         parsed = _parse_experience_block(block)
         if parsed is None:
             continue
+        has_date = any(DATE_RE.search(candidate) for candidate in block)
+        if not has_date and not parsed.summary and not parsed.highlights:
+            continue
         key = f"{parsed.company.lower()}::{parsed.role.lower()}"
         if key in seen:
             continue
@@ -508,9 +531,12 @@ def parse_resume(text: str, fetched_at: datetime) -> Resume:
     llm_parsed = _llm_parse(text)
     parsed = llm_parsed or deterministic
     links = {**deterministic.links, **parsed.links, **_extract_links(text)}
+    summary = parsed.summary or deterministic.summary
+    if summary:
+        summary = _summary_from_highlights(summary) or _clean_summary_text(summary)
     digest = hashlib.sha1(text.encode("utf-8")).hexdigest()[:12]
     return Resume(
-        summary=parsed.summary or deterministic.summary,
+        summary=summary,
         skills=parsed.skills or deterministic.skills,
         experiences=parsed.experiences or deterministic.experiences,
         education=parsed.education or deterministic.education,
