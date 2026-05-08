@@ -1,7 +1,6 @@
 from collections import Counter
 from datetime import datetime
 
-from ..config import settings
 from ..models.profile import Profile, Project, Resume, Source
 
 
@@ -45,51 +44,6 @@ def _merge_skills(github_skills: list[str], resume_skills: list[str], k: int = 2
     return merged
 
 
-def _llm_story(profile: Profile) -> str | None:
-    if not settings.openai_api_key:
-        return None
-    try:
-        from langchain_core.messages import HumanMessage, SystemMessage
-        from langchain_openai import ChatOpenAI
-
-        llm = ChatOpenAI(model="gpt-4o-mini", api_key=settings.openai_api_key)
-        top = sorted(profile.projects, key=lambda p: p.stars, reverse=True)[:5]
-        repo_lines = "\n".join(
-            f"- {p.name} ({p.language or '?'}, {p.stars}★): {p.description or ''}"
-            for p in top
-        )
-        resume_block = (
-            f"\nResume summary: {profile.resume_summary}\n"
-            if profile.resume_summary
-            else ""
-        )
-        exp_lines = ""
-        if profile.experiences:
-            exp_lines = "\nExperience:\n" + "\n".join(
-                f"- {e.role} at {e.company}" for e in profile.experiences[:5]
-            )
-        messages = [
-            SystemMessage(
-                content=(
-                    "You write short, engaging developer narratives. "
-                    "2-3 paragraphs, first person, concrete and specific. "
-                    "Ground every claim in the supplied facts; do not invent."
-                )
-            ),
-            HumanMessage(
-                content=(
-                    f"Developer: {profile.display_name or profile.username}\n"
-                    f"Bio: {profile.bio or ''}{resume_block}{exp_lines}\n\n"
-                    f"Top projects:\n{repo_lines}\n\n"
-                    "Write a developer story."
-                )
-            ),
-        ]
-        return llm.invoke(messages).content
-    except Exception:
-        return None
-
-
 def synthesize_profile(
     *,
     username: str,
@@ -126,7 +80,7 @@ def synthesize_profile(
     if resume:
         sources.extend(resume.sources)
 
-    profile = Profile(
+    return Profile(
         username=username,
         display_name=user.get("name") or username,
         headline=user.get("bio"),
@@ -142,5 +96,3 @@ def synthesize_profile(
         sources=sources,
         generated_at=fetched_at,
     )
-    profile.story = _llm_story(profile)
-    return profile
