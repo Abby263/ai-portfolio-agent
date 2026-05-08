@@ -1,5 +1,9 @@
 # ai-portfolio-agent
 
+> **Live demo** · Web: <https://web-xi-roan-10.vercel.app> · API: <https://api-seven-omega-54.vercel.app>
+>
+> Try it: <https://web-xi-roan-10.vercel.app/torvalds>
+
 `ai-portfolio-agent` is an AI-powered developer portfolio and project control platform.
 
 It connects with apps like GitHub, Vercel, LinkedIn, Instagram, uploaded resumes, blogs, and project documents to automatically build a rich developer profile. The platform understands a developer's work, creates a professional storyline, generates project summaries, and keeps the portfolio updated as new projects are added.
