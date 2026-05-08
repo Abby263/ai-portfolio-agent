@@ -74,7 +74,12 @@ export async function fetchProfile(username: string): Promise<Profile | null> {
 export type BuildProfileInput = {
   resumeText?: string | null;
   vercelToken?: string | null;
+  authToken?: string | null;
 };
+
+function authHeaders(authToken?: string | null): Record<string, string> {
+  return authToken ? { Authorization: `Bearer ${authToken}` } : {};
+}
 
 export async function buildProfile(
   username: string,
@@ -82,14 +87,18 @@ export async function buildProfile(
 ): Promise<Profile> {
   const res = await fetch(`${API_URL}/api/profile/${username}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(input.authToken),
+    },
     body: JSON.stringify({
       resume_text: input.resumeText ?? null,
       vercel_token: input.vercelToken ?? null,
     }),
   });
   if (!res.ok) {
-    throw new Error(`Failed to build profile (${res.status})`);
+    const detail = await res.text();
+    throw new Error(`Failed to build profile (${res.status}): ${detail}`);
   }
   return res.json();
 }

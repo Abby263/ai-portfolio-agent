@@ -2,9 +2,14 @@
 
 import { useState, useTransition } from "react";
 
+import { useAuth } from "@clerk/nextjs";
+
 import { buildProfile, type Profile } from "@/lib/api";
 
+const CLERK_ENABLED = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+
 type Row = "resume" | "vercel" | null;
+type GetToken = () => Promise<string | null>;
 
 export function Sources({
   profile,
@@ -12,6 +17,38 @@ export function Sources({
 }: {
   profile: Profile;
   onUpdate: (p: Profile) => void;
+}) {
+  // useAuth() is only safe when ClerkProvider is in the tree, so split
+  // the component on Clerk-enabled. The Inner version takes a getToken
+  // function and stays free of Clerk hooks otherwise.
+  if (CLERK_ENABLED) {
+    return <SourcesAuthed profile={profile} onUpdate={onUpdate} />;
+  }
+  return (
+    <SourcesInner
+      profile={profile}
+      onUpdate={onUpdate}
+      getToken={async () => null}
+    />
+  );
+}
+
+function SourcesAuthed(props: {
+  profile: Profile;
+  onUpdate: (p: Profile) => void;
+}) {
+  const { getToken } = useAuth();
+  return <SourcesInner {...props} getToken={() => getToken()} />;
+}
+
+function SourcesInner({
+  profile,
+  onUpdate,
+  getToken,
+}: {
+  profile: Profile;
+  onUpdate: (p: Profile) => void;
+  getToken: GetToken;
 }) {
   const [resumeText, setResumeText] = useState("");
   const [vercelToken, setVercelToken] = useState("");
@@ -30,9 +67,11 @@ export function Sources({
     setError(null);
     startTransition(async () => {
       try {
+        const authToken = await getToken();
         const next = await buildProfile(profile.username, {
           resumeText: resumeText.trim() || null,
           vercelToken: vercelToken.trim() || null,
+          authToken,
         });
         onUpdate(next);
         setOpenRow(null);

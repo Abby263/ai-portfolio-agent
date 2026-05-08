@@ -68,6 +68,10 @@ The app runs at `http://localhost:3000`. Try `http://localhost:3000/torvalds`.
 | `GITHUB_TOKEN` | Required for write actions | Personal Access Token with `repo` scope. Used for higher GitHub rate limits on read endpoints **and** for opening pull requests via `/api/actions/create-pr`. |
 | `GITHUB_WRITE_OWNER` | Required when `GITHUB_TOKEN` is set | Locks PR creation to repos owned by this single GitHub user. Without it, the shared `GITHUB_TOKEN` could be abused via the public endpoint. **Do not skip this.** |
 | `CORS_ORIGINS` | Recommended | JSON list of allowed browser origins, e.g. `["http://localhost:3000","https://ai-portfolio-agent.vercel.app"]`. |
+| `KV_REST_API_URL` | Optional (auto-set by Vercel KV) | Upstash REST endpoint. Auto-populated when you enable Storage → KV on the api project. |
+| `KV_REST_API_TOKEN` | Optional (auto-set by Vercel KV) | Upstash REST auth token. Auto-populated alongside `KV_REST_API_URL`. |
+| `CLERK_SECRET_KEY` | Optional | Clerk backend key. Required to validate ownership on `POST /api/profile/{username}` so only the GitHub-matching owner can save customizations. |
+| `CLERK_JWKS_URL` | Optional | Clerk's JWKS endpoint, e.g. `https://YOUR-INSTANCE.clerk.accounts.dev/.well-known/jwks.json`. Find it on the Clerk dashboard under **API Keys → Show JWKS URL**. |
 
 ### `web/` (Next.js)
 
@@ -140,6 +144,17 @@ Clerk handles sign-in via GitHub OAuth and tells the server "this signed-in user
 6. Redeploy the web project. The "Sign in" button appears in the header; signing in with GitHub now unlocks edit mode on the matching profile URL.
 
 Without Clerk keys set, the site keeps working as a public read-only demo (the Sources card stays hidden for everyone).
+
+### Vercel KV (persistence)
+
+Owner customizations (resume text, Vercel token) persist across requests so the public portfolio stays enriched after the owner edits it.
+
+1. On the Vercel dashboard, open the **ai-portfolio-agent-api** project.
+2. **Storage → Create Database → KV** (the Upstash-backed one). Pick the region closest to your function deployments (`iad1` works for the default).
+3. Vercel auto-creates four env vars on the project: `KV_URL`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `KV_REST_API_READ_ONLY_TOKEN`. The API only needs `KV_REST_API_URL` and `KV_REST_API_TOKEN`.
+4. Redeploy. Customizations now save under `customizations:<github-username>` and are merged into the profile build for every visitor.
+
+The persistence layer no-ops cleanly when these env vars aren't set — POSTs still work session-only and GETs build from sources without saved overrides.
 
 ### Vercel access token (per-user, UI-only)
 
