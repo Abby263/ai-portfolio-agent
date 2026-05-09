@@ -366,145 +366,38 @@ function CareerSnapshot({ profile }: { profile: Profile }) {
     Boolean(profile.resume_file_available) &&
     (!profile.resume_file_content_type ||
       profile.resume_file_content_type.includes("pdf"));
-  const topSkills = profile.skills.slice(0, 8);
-
   return (
-    <section className="mt-12 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--muted)]">
-      <div className="border-b border-[var(--border)] bg-[linear-gradient(135deg,rgba(94,234,212,0.12),transparent_55%,rgba(245,158,11,0.08))] p-6 md:p-7">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <p className="text-xs uppercase text-[var(--accent-soft)]">
-              Resume-backed profile
-            </p>
-            <h2 className="mt-3 max-w-2xl text-2xl font-semibold text-neutral-100 md:text-3xl">
-              Read the uploaded resume without leaving this page.
-            </h2>
-          </div>
-          <span className="w-fit rounded-md border border-[var(--accent-soft)]/30 bg-[var(--background)]/70 px-3 py-1 text-xs text-[var(--accent-soft)]">
-            {canEmbedResumePdf
-              ? "PDF embedded"
-              : profile.resume_file_available
-                ? "Resume file connected"
-                : "Resume inferred"}
-          </span>
-        </div>
+    <section className="mt-12 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--background)]">
+      <div className="border-b border-[var(--border)] bg-[linear-gradient(135deg,rgba(94,234,212,0.08),transparent_60%,rgba(245,158,11,0.05))] px-4 py-2.5 md:px-5">
+        <h2 className="text-xs uppercase text-[var(--accent-soft)]">
+          Resume-backed profile
+        </h2>
       </div>
 
-      <div className="grid gap-px bg-[var(--border)] lg:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="bg-[var(--background)] p-3 md:p-5">
-          {canEmbedResumePdf ? (
-            <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-white">
-              <iframe
-                title={`${profile.display_name ?? profile.username} resume PDF`}
-                src={`${resumeUrl(profile.username)}#toolbar=1&navpanes=0&view=FitH`}
-                className="h-[72vh] min-h-[620px] w-full bg-white"
-              />
-            </div>
-          ) : (
-            <div className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--muted)] p-6">
-              <p className="text-sm font-medium text-neutral-100">
-                {profile.resume_file_available
-                  ? "Resume file is connected, but it is not a PDF."
-                  : "Resume PDF is not embedded yet."}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-neutral-400">
-                Upload a PDF resume from Sources to show a scrollable document
-                viewer here. Parsed resume details still feed the experience,
-                education, and portfolio chat context.
-              </p>
-            </div>
-          )}
-        </div>
-
-        <aside className="bg-[var(--muted)] p-6 md:p-7">
-          <div className="grid gap-3">
-            <ResumeMetric
-              label="Resume file"
-              value={
-                canEmbedResumePdf
-                  ? "PDF"
-                  : profile.resume_file_available
-                    ? "File"
-                    : "Pending"
-              }
-            />
-            {profile.experiences.length > 0 ? (
-              <ResumeMetric
-                label="Roles"
-                value={String(profile.experiences.length)}
-              />
-            ) : null}
-            {profile.education.length > 0 ? (
-              <ResumeMetric
-                label="Education"
-                value={String(profile.education.length)}
-              />
-            ) : null}
-            <ResumeMetric
-              label="Contact links"
-              value={String(Object.keys(profile.links).length)}
+      <div className="bg-[var(--background)] p-2 md:p-3">
+        {canEmbedResumePdf ? (
+          <div className="overflow-hidden rounded-md border border-[var(--border)] bg-white">
+            <iframe
+              title={`${profile.display_name ?? profile.username} resume PDF`}
+              src={`${resumeUrl(profile.username)}#toolbar=1&navpanes=0&view=FitH`}
+              className="h-[78vh] min-h-[700px] w-full bg-white"
             />
           </div>
-
-          {topSkills.length > 0 ? (
-            <div className="mt-6">
-              <p className="text-xs uppercase text-neutral-500">
-                Core skills
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {topSkills.map((skill) => (
-                  <span
-                    key={skill}
-                    className="rounded-full border border-[var(--border)] bg-[var(--background)]/70 px-3 py-1 text-xs text-neutral-300"
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {profile.education.slice(0, 2).length > 0 ? (
-            <div className="mt-6">
-              <p className="text-xs uppercase text-neutral-500">
-                Education
-              </p>
-              <div className="mt-3 space-y-3">
-                {profile.education.slice(0, 2).map((item, index) => (
-                  <div
-                    key={`${item.institution}-${index}`}
-                    className="border-l border-[var(--accent-warm)]/60 pl-3"
-                  >
-                    <p className="text-sm font-medium text-neutral-100">
-                      {item.institution}
-                    </p>
-                    {item.degree || item.field ? (
-                      <p className="mt-1 text-xs text-neutral-400">
-                        {[item.degree, item.field].filter(Boolean).join(", ")}
-                      </p>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </aside>
+        ) : (
+          <div className="rounded-md border border-dashed border-[var(--border)] bg-[var(--muted)] p-5">
+            <p className="text-sm font-medium text-neutral-100">
+              {profile.resume_file_available
+                ? "Resume file is connected, but it is not a PDF."
+                : "Resume PDF is not embedded yet."}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-neutral-400">
+              Upload a PDF resume from Sources to show a scrollable document
+              viewer here. Parsed resume details still feed the experience,
+              education, and portfolio chat context.
+            </p>
+          </div>
+        )}
       </div>
     </section>
-  );
-}
-
-function ResumeMetric({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-lg border border-[var(--border)] bg-[var(--background)]/70 p-4">
-      <p className="text-[10px] uppercase text-neutral-500">{label}</p>
-      <p className="mt-1 font-mono text-2xl text-neutral-100">{value}</p>
-    </div>
   );
 }
