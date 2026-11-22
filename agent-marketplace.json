@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "ai-portfolio-agent",
+  "repository": "Abby263/ai-portfolio-agent",
+  "catalog": "listed",
+  "availability": "request_integration",
+  "name": "Portfolio Intelligence Agent",
+  "category": "Knowledge",
+  "description": "Organize public GitHub projects into a profile with supporting project summaries.",
+  "request": "An authorized GitHub profile and optional résumé.",
+  "response": "A structured profile, project summaries, and source references.",
+  "integration": {
+    "operation": "Retrieve a profile summary for an authorized username.",
+    "readiness": "Validate the published profile API and start with public profiles. Repository write actions and private résumés require separate scopes."
+  }
+}
